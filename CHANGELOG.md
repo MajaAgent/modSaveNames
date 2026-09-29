@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.3 — a hand-renamed save shows its own name
+
+* Measured in-game: for a file renamed to `kamil.sav` the engine reports
+  `kamil - wtorek, 29 września 2026 20:38:57` — i.e. when it cannot classify a
+  file it falls back to `<file name> + date`. `save.filename` carries no
+  extension (`kamil`), `slotType` was 3.
+* New: a file whose name the engine would not have generated is taken as the
+  custom name as-is (`kamil` shows as `kamil`, no date glued on). The `[label]`
+  tag mode still wins when present, and `Prettify` now only rewrites dashes
+  inside brackets, so a hand-typed name keeps its characters.
+* Nothing changed for saves the game named itself — they show the vanilla text.
+
 ## 0.1.2 — output you can actually see
 
 * The console never echoed `LogChannel` output (script logs only appear in

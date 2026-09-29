@@ -58,6 +58,24 @@ Each `modSaveNames_hud()` message shows, for one save:
 HUD messages queue up, a few seconds each. This single command tells us whether the
 mod's whole API surface works on this game version, without touching the menu.
 
+## What the dump already told us (5.0, in-game)
+
+A save file renamed by hand to `kamil.sav` produced:
+
+```
+#6 slotType=3 file=kamil | engine='kamil - wtorek, 29 września 2026 20:38:57' | shows='kamil'
+```
+
+* `file` has **no extension** — `save.filename` is the bare base name.
+* `engine` = `<file name> + " - " + localized date`: the engine could not classify
+  the file (its naming scheme is `ManualSave_<id>_<id>_<id>`), so it fell back to
+  the file name. This is why hand-renaming a save renames it in the menu — and why
+  an overwrite loses the name: the game writes a save file with its own name again.
+* `slotType` is `ESaveGameType` (native enum, values not in the script dump). Which
+  number means what can be read off the dump itself: a file the game created,
+  e.g. `ManualSave_*`, reports the value of `SGT_Manual`.
+* `shows` is what this mod puts in the row — nothing else changed in the row.
+
 ## Where does the log go?
 
 The console does **not** echo `LogChannel` output — that is why a log-only dump looks

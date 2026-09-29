@@ -17,6 +17,7 @@
 
 
 
+
 // ------------------------------------------------------------------ knobs ----
 
 // Show the engine's own name after your label, e.g.
@@ -30,8 +31,8 @@ function ModSaveNames_ShowEngineName() : bool
 // -------------------------------------------------------------- utilities ----
 
 // "ManualSave_[Rodrigo boss fight]_4711_9f2a11" -> "Rodrigo boss fight"
-// "ManualSave_8559a_7ea47000_515dab8"          -> ""   (no label)
-// "kamil"                                      -> ""   (no label)
+// "ManualSave_8559a_7ea47000_515dab8"          -> ""   (engine name, no label)
+// "kamil"                                      -> ""   (handled elsewhere)
 function ModSaveNames_ExtractLabel(filename : string) : string
 {
 	var openMark  : string;
@@ -58,10 +59,56 @@ function ModSaveNames_ExtractLabel(filename : string) : string
 
 
 // Labels live in file names, so characters Windows refuses were written as "-";
-// put the spaces back for the player.
+// put the spaces back for the player. Only used for [bracketed] labels - a file
+// the player renamed by hand keeps exactly the characters they typed.
 function ModSaveNames_Prettify(label : string) : string
 {
 	return StrReplaceAll(label, "-", " ");
+}
+
+
+// The game names its own saves "ManualSave_8559a_7ea47000_515dab8" (type, then
+// engine ids). Anything else in the folder was renamed by a human - which is
+// how a hand-renamed save ends up in the menu at all: measured on 5.0 with a
+// file renamed to kamil.sav, the engine reported
+//     name = "kamil - wtorek, 29 września 2026 20:38:57"
+// i.e. it could not classify the file, so it fell back to <file name> + date.
+// We treat such a file as "the whole name is the custom name".
+function ModSaveNames_IsEngineName(filename : string) : bool
+{
+	if (StrBeginsWith(filename, "ManualSave"))		{ return true; }
+	if (StrBeginsWith(filename, "AutoSave"))		{ return true; }
+	if (StrBeginsWith(filename, "QuickSave"))		{ return true; }
+	if (StrBeginsWith(filename, "CheckPoint"))		{ return true; }
+	if (StrBeginsWith(filename, "ForcedCheckPoint")){ return true; }
+	if (StrBeginsWith(filename, "PointOfNoReturn"))	{ return true; }
+	if (StrBeginsWith(filename, "ImportSave"))		{ return true; }
+	if (StrBeginsWith(filename, "Save"))			{ return true; }
+
+	return false;
+}
+
+
+// The custom name carried by a save file, or "" when the file is the game's own.
+//   1. a [label] in the name wins (the renamer's "tag" mode)
+//   2. a name the engine does not recognise is taken as the custom name
+function ModSaveNames_CustomNameFromFilename(filename : string) : string
+{
+	var label : string;
+
+	label = ModSaveNames_ExtractLabel(filename);
+
+	if (StrLen(label) > 0)
+	{
+		return ModSaveNames_Prettify(label);
+	}
+
+	if (StrLen(filename) > 0 && !ModSaveNames_IsEngineName(filename))
+	{
+		return filename;
+	}
+
+	return "";
 }
 
 
@@ -70,7 +117,7 @@ function ModSaveNames_MakeLabel(save : SSavegameInfo, engineName : string) : str
 {
 	var label : string;
 
-	label = ModSaveNames_Prettify(ModSaveNames_ExtractLabel(save.filename));
+	label = ModSaveNames_CustomNameFromFilename(save.filename);
 
 	if (StrLen(label) == 0)
 	{
@@ -101,7 +148,7 @@ function ModSaveNames_MakeLabel(save : SSavegameInfo, engineName : string) : str
 
 function ModSaveNames_Version() : string
 {
-	return "0.1.2";
+	return "0.1.3";
 }
 
 function ModSaveNames_Clip(text : string, maxLen : int) : string
