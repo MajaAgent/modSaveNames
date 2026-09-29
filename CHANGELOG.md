@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.6 — labels get their capital letter back
+
+Measured: a file named `KamilTest` is reported by the engine as `kamiltest` — save
+file names are lower-cased, so a custom name showed up all lower case in the menu.
+The label now gets its first letter back (ASCII only on purpose: slicing a multibyte
+Polish character by one byte would corrupt it). New knob
+`ModSaveNames_SentenceCase()` — set it to `false` to show exactly what the engine
+reports. Only custom labels are touched; vanilla names are untouched.
+
 ## 0.1.5 — the dump reports the save slot
 
 `modSaveNames_hud()` now prints `slot=` (`SSavegameInfo.slotIndex`) next to `type=`.

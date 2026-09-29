@@ -80,6 +80,17 @@ mod's whole API surface works on this game version, without touching the menu.
   so the type lives inside the save and the file stays in the right tab.
 * `ESaveGameType` values read off the dump: `1` autosave, `2` quicksave, `3` manual,
   `5` checkpoint.
+* File names are **lower-cased** in everything the engine reports (`KamilTest` →
+  `kamiltest`, also in `GetDisplayNameForSavedGame`), hence the
+  `ModSaveNames_SentenceCase()` knob.
+* The date in the engine's name is the **file's timestamp**, not something inside the
+  save: a byte-identical copy of a save showed the copy's time
+  (`kamiltest` 21:02:49 vs `kamil` 20:38:57). Renaming a file does not change its
+  timestamp, so a renamed save keeps its original date — copying one does not.
+* Overwriting a slot writes a **new file under the game's own name**
+  (`ManualSave_53db9_7ea47000_5c98d32.sav`, capitals on disk, reported lower case),
+  so the custom text in the old file name is gone and the row goes back to
+  `<quest name> - <date>`.
 * `shows` is what this mod puts in the row; everything else in the row is vanilla.
 
 ## Where does the log go?

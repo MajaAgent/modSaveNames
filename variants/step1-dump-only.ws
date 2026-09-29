@@ -20,6 +20,7 @@
 
 
 
+
 // ------------------------------------------------------------------ knobs ----
 
 // Show the engine's own name after your label, e.g.
@@ -27,6 +28,15 @@
 function ModSaveNames_ShowEngineName() : bool
 {
 	return false;
+}
+
+// The engine reports save file names in LOWER CASE (a file named "KamilTest"
+// comes back as "kamiltest"), so a custom name would show up all lower case.
+// This knob puts the first letter of the label back in upper case. Turn it off
+// to display exactly what the engine reports.
+function ModSaveNames_SentenceCase() : bool
+{
+	return true;
 }
 
 
@@ -101,6 +111,40 @@ function ModSaveNames_IsEngineName(filename : string) : bool
 }
 
 
+// First letter up. Only touches an ASCII letter on purpose: slicing a multibyte
+// Polish character by one byte would corrupt it, so those are left alone.
+function ModSaveNames_UpperFirstLetter(text : string) : string
+{
+	var first : string;
+
+	if (StrLen(text) == 0)
+	{
+		return text;
+	}
+
+	first = StrLeft(text, 1);
+
+	if ( !StrContains("abcdefghijklmnopqrstuvwxyz", first) )
+	{
+		return text;
+	}
+
+	return StrUpper(first) + StrMid(text, 1);
+}
+
+
+// Sentence-case the label if the knob says so (see ModSaveNames_SentenceCase).
+function ModSaveNames_ApplyStyle(label : string) : string
+{
+	if ( !ModSaveNames_SentenceCase() || StrLen(label) == 0 )
+	{
+		return label;
+	}
+
+	return ModSaveNames_UpperFirstLetter(label);
+}
+
+
 // The custom name carried by a save file, or "" when the file is the game's own.
 //   1. a [label] in the name wins (the renamer's "tag" mode)
 //   2. a name the engine does not recognise is taken as the custom name
@@ -112,12 +156,12 @@ function ModSaveNames_CustomNameFromFilename(filename : string) : string
 
 	if (StrLen(label) > 0)
 	{
-		return ModSaveNames_Prettify(label);
+		return ModSaveNames_ApplyStyle(ModSaveNames_Prettify(label));
 	}
 
 	if (StrLen(filename) > 0 && !ModSaveNames_IsEngineName(filename))
 	{
-		return filename;
+		return ModSaveNames_ApplyStyle(filename);
 	}
 
 	return "";
@@ -160,7 +204,7 @@ function ModSaveNames_MakeLabel(save : SSavegameInfo, engineName : string) : str
 
 function ModSaveNames_Version() : string
 {
-	return "0.1.5";
+	return "0.1.6";
 }
 
 function ModSaveNames_Clip(text : string, maxLen : int) : string
