@@ -34,6 +34,16 @@ fi
 # shellcheck disable=SC2086
 "$PY" "$ROOT/tools/audit-ws.py" "$ROOT"/content/scripts/local/*.ws $AUDIT_CORPUS
 
+# The real parser, when it is around: catches everything a regex cannot (a word that
+# looks like an identifier but is a reserved token, a local `var` declared after an
+# executable statement, invalid expressions). Install it once with
+#   cargo install --git https://github.com/webspam/witcherscript-language witcherscript-check
+if command -v witcherscript-check >/dev/null 2>&1; then
+	witcherscript-check "$ROOT"/content/scripts/local/*.ws
+else
+	echo "note: witcherscript-check is not on PATH - the real-parser check is skipped"
+fi
+
 # The save->player map is 8 chunks of "|file=player": the string rules are mirrored
 # in Python, and the chunk count/format are read out of the .ws, so a format change
 # fails here instead of shipping a map that cannot find its own entries.

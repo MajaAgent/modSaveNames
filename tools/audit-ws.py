@@ -30,6 +30,23 @@ BUILTIN_TYPES = {
     "color", "actionPoint", "CScriptedFlashObject", "EntityHandle",
 }
 
+# Reserved words of the WitcherScript lexer. A word from this list cannot name a
+# variable, parameter, field, function or class - the compiler answers with
+# "unexpected TOKEN_<something>, expecting TOKEN_IDENT" and names the word.
+# Source: the keyword table of the WitcherScript parser/LSP crate
+# github.com/webspam/witcherscript-language (`classify_anonymous_keyword`),
+# plus the control-flow words from the same grammar. Cross-checked against the
+# engine's own messages: `name` gives TOKEN_TYPE_NAME, `entry` gives TOKEN_ENTRY.
+RESERVED = {
+    "class", "struct", "enum", "state", "statemachine", "function", "event", "extends",
+    "var", "autobind", "defaults", "hint", "abstract", "latent", "import", "const",
+    "final", "editable", "saved", "optional", "out", "inlined", "private", "protected",
+    "public", "cleanup", "entry", "exec", "quest", "reward", "storyscene", "timer",
+    "single", "if", "else", "for", "while", "do", "switch", "case", "default", "break",
+    "continue", "return", "true", "false", "new", "delete", "this", "super", "and",
+    "or", "not", "in",
+}
+
 # Words the parser knows; never identifiers we control, and not "unknown calls".
 KEYWORDS = {
     "var", "function", "exec", "import", "final", "latent", "optional", "out", "in",
@@ -38,7 +55,6 @@ KEYWORDS = {
     "continue", "return", "true", "false", "null", "class", "struct", "enum",
     "state", "autobind", "event", "timer", "hint", "editable", "tooltip", "range",
     "saved", "inline", "abstract", "native", "static", "wrapped", "editoronly",
-    "and", "or", "not", "extends",
 }
 
 # Part of the modding API, not in the game's own scripts.
@@ -95,6 +111,8 @@ def declared_identifiers(code: str) -> list[tuple[int, str, str]]:
                 pm = re.match(r"([A-Za-z_]\w*)\s*:", param)
                 if pm:
                     out.append((i, "parameter", pm.group(1)))
+        for m in re.finditer(r"\b(?:function|class|struct|enum|state)\s+([A-Za-z_]\w*)", line):
+            out.append((i, "declaration", m.group(1)))
     return out
 
 
@@ -131,7 +149,11 @@ def main() -> int:
         print(f"== {f.name}")
 
         for line, kind, nm in declared_identifiers(code):
-            if nm in types:
+            if nm in RESERVED:
+                print(f"   FAIL line {line}: {kind} '{nm}' - reserved word "
+                      f"(the compiler answers TOKEN_<X>, expecting TOKEN_IDENT)")
+                problems += 1
+            elif nm in types:
                 print(f"   FAIL line {line}: {kind} '{nm}' - that is an engine TYPE name")
                 problems += 1
 

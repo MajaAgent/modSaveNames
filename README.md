@@ -203,8 +203,24 @@ the mod collapses the runs, while a dash you typed stays a dash.
 ## Build the release archive
 
 ```
-./build-release.sh 0.2.0     # -> dist/modSaveNames-0.2.0.zip, layout mods/modSaveNames/content/...
+./build-release.sh 0.3.2     # -> dist/modSaveNames-0.3.2.zip, layout mods/modSaveNames/content/...
 ```
+
+The build refuses to produce the archive if any check fails. Four of them run always:
+`tools/wscheck.py`, `tools/audit-ws.py` (reserved words, engine type names used as names,
+file-scope `var`, unknown calls), `tools/test-owner-map.py` and
+`tools/test-label-packing.py`. Two are stronger and optional, because they need data we
+do not ship:
+
+```
+W3_CORPUS=/path/to/Witcher3/scripts  ./build-release.sh 0.3.2   # completes the call check
+cargo install --git https://github.com/webspam/witcherscript-language witcherscript-check
+```
+
+`witcherscript-check` is a third-party WitcherScript parser (MIT, tree-sitter based): it
+is the only thing here that actually parses the language, so with it on `PATH` the build
+also reports things like a local `var` declared after an executable statement — a rule the
+game enforces and no regex can see. The two files in this repo parse clean with it.
 
 ## Repository layout
 
@@ -219,7 +235,8 @@ tools/w3save_renamer.py                  companion renamer (Python)
 tools/w3save-rename.ps1                  companion renamer (PowerShell, no dependencies)
 tools/test-w3save_renamer.sh             its real test run (synthetic saves, printed transcript)
 tools/wscheck.py                         static check (undefined calls, braces) run by the build
-tools/audit-ws.py                        WitcherScript traps (engine type names, file-scope var)
+tools/audit-ws.py                        WitcherScript traps: reserved words, type names, file-scope var
+                                         (optional) witcherscript-check: the real parser, used by the build when on PATH
 tools/test-owner-map.py                  runs the map's string rules in Python (run by the build)
 tools/card_png.py                        PNG writer + 5x7 bitmap font for thumbnails (no dependencies)
 tools/test-w3save-card.sh                its test run (right file, right size, --dry-run writes nothing)

@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.3.2 — one reserved word, and a real parser in the build
+
+* `ModSaveNames_MapPut()` used a local variable called `entry`; **`entry` is a reserved
+  word** in WitcherScript (TOKEN_ENTRY — it belongs to the state-machine grammar, like
+  `cleanup`, `quest`, `reward`, `storyscene`, `single`), so 0.3.1 stopped there:
+  `syntax error, unexpected TOKEN_ENTRY, expecting TOKEN_IDENT, near 'entry'`. Renamed to
+  `mapEntry`.
+* `tools/audit-ws.py` now knows the language's reserved words (taken from the keyword
+  table of the third-party parser below) and checks function and class names too, not only
+  variables and parameters.
+* The build can now run **`witcherscript-check`** — a real WitcherScript parser
+  (MIT, tree-sitter based, `cargo install --git
+  https://github.com/webspam/witcherscript-language witcherscript-check`). It is the only
+  check here that actually parses the language: with it on `PATH` the build also catches
+  rules no regex can see, e.g. a local `var` declared after an executable statement
+  (`late_local_var_decl`). Tested against a file carrying all three traps of 0.3.0/0.3.1:
+  it reports them. **Both mod files parse clean with it**, and the archive is only built
+  when every check passes.
+
 ## 0.3.1 — 0.3.0 did not compile (two WitcherScript traps)
 
 * `setSaveName(owner : string)`: the parameter was called `name`, and `name` is an engine

@@ -291,10 +291,10 @@ function ModSaveNames_MapStrip(part : string, file : string) : string
 function ModSaveNames_MapPut(file : string, owner : string) : bool
 {
 	var i : int;
-	var entry, part, before : string;
+	var mapEntry, part, before : string;
 	var placed, changed : bool;
 
-	entry   = ModSaveNames_MapKey(file) + ModSaveNames_CleanOwner(owner);
+	mapEntry   = ModSaveNames_MapKey(file) + ModSaveNames_CleanOwner(owner);
 	placed  = false;
 	changed = false;
 
@@ -303,9 +303,9 @@ function ModSaveNames_MapPut(file : string, owner : string) : bool
 		before = ModSaveNames_ConfigGetPart(i);
 		part   = ModSaveNames_MapStrip(before, file);
 
-		if (!placed && StrLen(part) + StrLen(entry) <= ModSaveNames_PartLimit())
+		if (!placed && StrLen(part) + StrLen(mapEntry) <= ModSaveNames_PartLimit())
 		{
-			part   = part + entry;
+			part   = part + mapEntry;
 			placed = true;
 		}
 
@@ -320,7 +320,7 @@ function ModSaveNames_MapPut(file : string, owner : string) : bool
 	{
 		// every chunk is full - let the last one grow rather than lose the entry
 		ModSaveNames_ConfigSetPart(ModSaveNames_MapParts() - 1,
-			ModSaveNames_ConfigGetPart(ModSaveNames_MapParts() - 1) + entry);
+			ModSaveNames_ConfigGetPart(ModSaveNames_MapParts() - 1) + mapEntry);
 		changed = true;
 	}
 
