@@ -549,11 +549,6 @@ function ModSaveNames_AnnounceLabel()
 {
 	var label : string;
 
-	if (thePlayer == NULL)
-	{
-		return;
-	}
-
 	label = ModSaveNames_StoredLabel();
 
 	if (StrLen(label) > 0)
@@ -659,7 +654,7 @@ exec function clearSaveName()
 
 function ModSaveNames_Version() : string
 {
-	return "0.3.3";
+	return "0.3.4";
 }
 
 function ModSaveNames_Clip(text : string, maxLen : int) : string

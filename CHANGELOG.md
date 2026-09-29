@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.3.4 - NULL cannot be compared (guard removed)
+
+`if (thePlayer == NULL)` does not compile: **`NULL` is a void literal**, so
+`Unable to find suitable operator 'OperatorEqual' for given types (handle:CR4Player, void)`.
+The game's own scripts say the same thing by example: `NULL` appears **484** times, every
+one of them an assignment or a pass (`buff = NULL;`, `effectManager.SetCurrentlyAnimatedCS(NULL)`,
+`EntityHandleSet(usedVehicleHandle, NULL)`), and **zero** comparisons.
+
+So the guard is gone rather than rewritten. Vanilla calls `thePlayer.DisplayHudMessage(text)`
+with no guard either (`fastTravelEntity.ws`, `locationArea.ws`), every caller of
+`ModSaveNames_Say` has a live player (the console commands and the save/load hooks), and
+`ModSaveNames_AnnounceLabel` runs from the player's own `OnSpawned`. The 0.1.7 build that
+was verified in game had no guard in this path either.
+
+* `tools/audit-ws.py` now fails on any `== NULL` / `!= NULL`, so this cannot come back.
+
 ## 0.3.3 — `null` does not exist in WitcherScript (and a name check that would have said so)
 
 * Both files guarded a message with `if (thePlayer == null)`. **`null` is not a

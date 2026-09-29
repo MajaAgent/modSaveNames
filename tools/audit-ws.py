@@ -265,6 +265,15 @@ def main() -> int:
             if re.search(r"(?<![.\w])null(?![.\w])", line):
                 print(f"   FAIL line {i}: `null` does not exist - the literal is `NULL`")
                 problems += 1
+        # NULL is a *void* literal: the game uses it 484 times to assign or pass a null
+        # handle (buff = NULL;, SetCurrentlyAnimatedCS(NULL)) and never once to compare,
+        # because `handle == NULL` is a type error:
+        #   Unable to find suitable operator 'OperatorEqual' for given types (handle:CR4Player, void)
+        for i, line in enumerate(code.splitlines(), 1):
+            if re.search(r"NULL\s*(==|!=)|(==|!=)\s*NULL", line):
+                print(f"   FAIL line {i}: comparison with NULL - NULL is void, so `== NULL` "
+                      f"is a type error; assign or pass it instead, never compare")
+                problems += 1
 
         plain = mask(raw, keep_strings=True)   # braces live in text too
         for o, c, what in (("{", "}", "braces"), ("(", ")", "parentheses")):

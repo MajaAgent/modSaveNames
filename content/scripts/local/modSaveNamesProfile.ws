@@ -207,14 +207,12 @@ function ModSaveNames_SetProfile(profile : string, announce : bool)
 	}
 }
 
-// Small wrapper so every message survives a missing player object.
+// Every caller has a live player object: the console commands and the save/load hooks
+// (and AnnounceLabel runs from the player's own OnSpawned). The game calls
+// thePlayer.DisplayHudMessage() with no guard either (fastTravelEntity, locationArea).
+// A NULL test is not an option anyway - see the note in CHANGELOG 0.3.4.
 function ModSaveNames_Say(text : string)
 {
-	if (thePlayer == NULL)
-	{
-		return;
-	}
-
 	thePlayer.DisplayHudMessage(text);
 }
 
