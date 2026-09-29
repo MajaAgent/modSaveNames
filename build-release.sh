@@ -24,6 +24,16 @@ PY="$(command -v python3 || command -v python)"
 # "Script compilation errors" box in the game.
 "$PY" "$ROOT/tools/wscheck.py" "$ROOT"/content/scripts/local/*.ws
 
+# WitcherScript traps a normal linter misses: engine type names cannot be used as
+# identifiers, `var` is illegal at file scope. The game's own scripts make the call
+# check complete - W3_CORPUS=/path/to/Witcher3/scripts ./build-release.sh
+AUDIT_CORPUS=""
+if [ -n "$W3_CORPUS" ] && [ -d "$W3_CORPUS" ]; then
+	AUDIT_CORPUS="--corpus $W3_CORPUS"
+fi
+# shellcheck disable=SC2086
+"$PY" "$ROOT/tools/audit-ws.py" "$ROOT"/content/scripts/local/*.ws $AUDIT_CORPUS
+
 # The save->player map is 8 chunks of "|file=player": the string rules are mirrored
 # in Python, and the chunk count/format are read out of the .ws, so a format change
 # fails here instead of shipping a map that cannot find its own entries.

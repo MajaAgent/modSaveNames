@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.3.1 — 0.3.0 did not compile (two WitcherScript traps)
+
+* `setSaveName(owner : string)`: the parameter was called `name`, and `name` is an engine
+  **type** in WitcherScript (`exec function acticon( contentToActivate : name )` in the
+  game's own `scripts/engine/game.ws`). The lexer returns TOKEN_TYPE_NAME for it and the
+  parser refuses it as a parameter name.
+* **No file-scope variables.** WitcherScript has no globals — the compiler rejects `var`
+  outside a function, class or state — so both script variables are gone: the save the
+  player last asked to load now lives in the same settings group as the map
+  (`ModSaveNames / LoadFile`, which also survives a death or a quickload), and the
+  "dirty" flag was replaced by `MapPut()` returning whether it changed anything, so the
+  settings file is written only when something really changed.
+* Starting a new game clears that pointer (`CR4IngameMenu::NewGameRequested`, another
+  merge-free `@wrapMethod`), so `showSaveName()` in a new game does not talk about the
+  save played before it.
+* `tools/audit-ws.py` checks exactly these traps (engine type names as identifiers,
+  file-scope `var`, unknown calls, bracket balance) and runs in the build. Point it at the
+  game's own scripts for the complete check:
+  `W3_CORPUS=/path/to/Witcher3/scripts ./build-release.sh`.
+
 ## 0.3.0 — everything in the mod (no companion tool, nothing on disk touched)
 
 * **The save/load list is labelled by the mod itself.** Those rows already come from

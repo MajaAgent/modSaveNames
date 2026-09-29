@@ -584,28 +584,27 @@ function OnSpawned(spawnData : SEntitySpawnData)
 //   showSaveName()         what this save says right now
 //   clearSaveName()        remove the name from this save
 
-exec function setSaveName(name : string)
+exec function setSaveName(owner : string)
 {
 	var file : string;
 
-	if (StrLen(name) == 0)
+	if (StrLen(owner) == 0)
 	{
 		return;
 	}
 
-	ModSaveNames_SetProfile(name, false);
-	ModSaveNames_StoreLabel(name);
+	ModSaveNames_SetProfile(owner, false);
+	ModSaveNames_StoreLabel(owner);
 
 	// claim the save being played, so the list and the HUD never disagree
-	file = ModSaveNames_LoadFile;
+	file = ModSaveNames_LoadedFileGet();
 
-	if (StrLen(file) > 0)
+	if (StrLen(file) > 0 && ModSaveNames_MapPut(file, owner))
 	{
-		ModSaveNames_MapPut(file, name);
 		ModSaveNames_MapFlush();
 	}
 
-	ModSaveNames_Say("'" + name + "' now: this save and this player - save the game to keep it");
+	ModSaveNames_Say("'" + owner + "' now: this save and this player - save the game to keep it");
 }
 
 exec function showSaveName()
@@ -614,7 +613,7 @@ exec function showSaveName()
 
 	label   = ModSaveNames_StoredLabel();
 	profile = ModSaveNames_Profile();
-	file    = ModSaveNames_LoadFile;
+	file    = ModSaveNames_LoadedFileGet();
 	owner   = "";
 
 	if (StrLen(file) > 0)
@@ -632,7 +631,7 @@ exec function clearSaveName()
 {
 	var file : string;
 
-	file = ModSaveNames_LoadFile;
+	file = ModSaveNames_LoadedFileGet();
 
 	if (StrLen(file) > 0)
 	{
@@ -660,7 +659,7 @@ exec function clearSaveName()
 
 function ModSaveNames_Version() : string
 {
-	return "0.3.0";
+	return "0.3.1";
 }
 
 function ModSaveNames_Clip(text : string, maxLen : int) : string

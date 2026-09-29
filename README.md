@@ -219,6 +219,7 @@ tools/w3save_renamer.py                  companion renamer (Python)
 tools/w3save-rename.ps1                  companion renamer (PowerShell, no dependencies)
 tools/test-w3save_renamer.sh             its real test run (synthetic saves, printed transcript)
 tools/wscheck.py                         static check (undefined calls, braces) run by the build
+tools/audit-ws.py                        WitcherScript traps (engine type names, file-scope var)
 tools/test-owner-map.py                  runs the map's string rules in Python (run by the build)
 tools/card_png.py                        PNG writer + 5x7 bitmap font for thumbnails (no dependencies)
 tools/test-w3save-card.sh                its test run (right file, right size, --dry-run writes nothing)
@@ -238,16 +239,23 @@ build-release.sh                         release zip
   reports a compilation error on that line, drop in `variants/step1-dump-only.ws`:
   the same mod with no override at all, so `setSaveName()`/`showSaveName()` and the
   in-save label keep working — only the automatic message and the list labels are gone.
-* Three more overrides, all `@wrapMethod` and therefore merge-free: `CR4Player::OnSpawned`
+* Four more overrides, all `@wrapMethod` and therefore merge-free: `CR4Player::OnSpawned`
   (the `Save: X` message and the player switch), `CR4IngameMenu::LoadSaveRequested` (which
-  save is being loaded) and `CR4Game::OnSaveCompleted` (the file the engine has just
-  written). A build that reports a compilation error on any of them: delete that one
-  function and the rest keeps working, in the order
-  `OnSaveCompleted` → `LoadSaveRequested` → `OnSpawned` (last one is the 0.2 feature).
+  save is being loaded), `CR4Game::OnSaveCompleted` (the file the engine has just written)
+  and `CR4IngameMenu::NewGameRequested` (forget the previously loaded save). If a build
+  reports a compilation error on one of them, delete that one function — the rest keeps
+  working — in this order: `NewGameRequested`, `OnSaveCompleted`, `LoadSaveRequested`;
+  `OnSpawned` is the 0.2 feature and should stay.
+* WitcherScript has **no globals**: `var` outside a function, class or state is a syntax
+  error, and scripts are reloaded without warning. Every value that has to outlive a
+  single call therefore lives in the settings group (`Installed`, `Profile`, `LoadFile`
+  and the map chunks) — which is also why they survive a quickload, a death and a menu.
 * Known limits: the map's entries live in `user.settings`, so a player who wipes that
-  file starts collecting again (everything is marked `[?]`); the engine's own row name —
-  quest plus date — is still whatever the game wrote, and the thumbnail is still the
-  engine's picture. The in-save name (feature 2) is unaffected by all of this.
+  file starts collecting again (everything is marked `[?]`); `showSaveName()` /
+  `clearSaveName()` refer to the last save that was loaded or requested, and starting a
+  new game clears that pointer; the engine's own row name — quest plus date — is still
+  whatever the game wrote, and the thumbnail is still the engine's picture. The in-save
+  name (feature 2) is unaffected by all of this.
 
 ## Licence
 

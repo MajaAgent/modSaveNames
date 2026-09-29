@@ -76,12 +76,15 @@ function ModSaveNames_UseAccountName() : bool
 
 // ---------------------------------------------------------------- storage ----
 
-// Session only: the save file the player just asked to load. Set by the
-// LoadSaveRequested hook, consumed once the world it belongs to is spawned.
-var ModSaveNames_LoadFile : string;
-
-// Set when the map changed, so the settings file is written once and not per row.
-var ModSaveNames_MapDirty : bool;
+// No file-scope variables here - on purpose. WitcherScript has no globals (the
+// compiler rejects `var` outside a function, class or state), and a script variable
+// would not survive a script reload anyway. Everything that has to outlive a single
+// call lives in the game's own settings, next to the map:
+//
+//   ModSaveNames / Installed  the first version that ever ran (marks the first run)
+//   ModSaveNames / Profile    who is playing
+//   ModSaveNames / LoadFile   the save the player last asked to load (see below)
+//   ModSaveNames / P0 .. P7   the map itself: file -> player, one entry per save
 
 function ModSaveNames_MapParts() : int
 {
@@ -132,16 +135,24 @@ function ModSaveNames_ConfigSetPart(index : int, value : string)
 	}
 }
 
-// Write the settings file once, if anything changed since the last flush.
+// Write the settings file. Only reached when something really changed, so the file
+// is not rewritten every time a menu is refreshed.
 function ModSaveNames_MapFlush()
 {
-	if (!ModSaveNames_MapDirty)
-	{
-		return;
-	}
-
 	theGame.SaveUserSettings();
-	ModSaveNames_MapDirty = false;
+}
+
+// The save the player last asked to load - in practice the one being played. Kept in
+// the settings rather than in a script variable: WitcherScript has no globals, and
+// this way it also survives a menu, a death and a quickload.
+function ModSaveNames_LoadedFileGet() : string
+{
+	return theGame.GetInGameConfigWrapper().GetVarValue('ModSaveNames', 'LoadFile');
+}
+
+function ModSaveNames_LoadedFileSet(file : string)
+{
+	theGame.GetInGameConfigWrapper().SetVarValue('ModSaveNames', 'LoadFile', file);
 }
 
 
@@ -275,18 +286,22 @@ function ModSaveNames_MapStrip(part : string, file : string) : string
 }
 
 // Remember (or overwrite) who a save file belongs to.
-function ModSaveNames_MapPut(file : string, owner : string)
+// True when the map changed, so the caller knows whether the settings file needs
+// writing (a row refreshed with the owner it already has changes nothing).
+function ModSaveNames_MapPut(file : string, owner : string) : bool
 {
-	var i, at : int;
-	var entry, part : string;
-	var placed : bool;
+	var i : int;
+	var entry, part, before : string;
+	var placed, changed : bool;
 
-	entry  = ModSaveNames_MapKey(file) + ModSaveNames_CleanOwner(owner);
-	placed = false;
+	entry   = ModSaveNames_MapKey(file) + ModSaveNames_CleanOwner(owner);
+	placed  = false;
+	changed = false;
 
 	for (i = 0; i < ModSaveNames_MapParts(); i += 1)
 	{
-		part = ModSaveNames_MapStrip(ModSaveNames_ConfigGetPart(i), file);
+		before = ModSaveNames_ConfigGetPart(i);
+		part   = ModSaveNames_MapStrip(before, file);
 
 		if (!placed && StrLen(part) + StrLen(entry) <= ModSaveNames_PartLimit())
 		{
@@ -294,7 +309,11 @@ function ModSaveNames_MapPut(file : string, owner : string)
 			placed = true;
 		}
 
-		ModSaveNames_ConfigSetPart(i, part);
+		if (part != before)
+		{
+			changed = true;
+			ModSaveNames_ConfigSetPart(i, part);
+		}
 	}
 
 	if (!placed)
@@ -302,9 +321,10 @@ function ModSaveNames_MapPut(file : string, owner : string)
 		// every chunk is full - let the last one grow rather than lose the entry
 		ModSaveNames_ConfigSetPart(ModSaveNames_MapParts() - 1,
 			ModSaveNames_ConfigGetPart(ModSaveNames_MapParts() - 1) + entry);
+		changed = true;
 	}
 
-	ModSaveNames_MapDirty = true;
+	return changed;
 }
 
 function ModSaveNames_MapDrop(file : string)
@@ -321,7 +341,6 @@ function ModSaveNames_MapDrop(file : string)
 		ModSaveNames_ConfigSetPart(i, ModSaveNames_MapStrip(ModSaveNames_ConfigGetPart(i), file));
 	}
 
-	ModSaveNames_MapDirty = true;
 	ModSaveNames_MapFlush();
 }
 
@@ -384,7 +403,7 @@ function ModSaveNames_SyncMap(saveGames : array<SSavegameInfo>)
 {
 	var i : int;
 	var owner, claim : string;
-	var firstRun : bool;
+	var firstRun, changed : bool;
 
 	firstRun = StrLen(theGame.GetInGameConfigWrapper().GetVarValue('ModSaveNames', 'Installed')) == 0;
 	claim    = ModSaveNames_Profile();
@@ -405,22 +424,33 @@ function ModSaveNames_SyncMap(saveGames : array<SSavegameInfo>)
 
 		if (firstRun)
 		{
-			ModSaveNames_MapPut(saveGames[i].filename, "?");
+			// an old save: nobody claimed it, and the mod does not guess
+			if (ModSaveNames_MapPut(saveGames[i].filename, "?"))
+			{
+				changed = true;
+			}
 		}
 		else
 		{
 			// either the save that is being played right now, or one written
 			// while the mod was watching: both belong to the player at the keyboard
-			ModSaveNames_MapPut(saveGames[i].filename, claim);
+			if (ModSaveNames_MapPut(saveGames[i].filename, claim))
+			{
+				changed = true;
+			}
 		}
 	}
 
 	if (firstRun)
 	{
 		theGame.GetInGameConfigWrapper().SetVarValue('ModSaveNames', 'Installed', ModSaveNames_Version());
+		changed = true;
 	}
 
-	ModSaveNames_MapFlush();
+	if (changed)
+	{
+		ModSaveNames_MapFlush();
+	}
 }
 
 // After a completed save the engine has already written the new file, so this is
@@ -451,7 +481,7 @@ function ModSaveNames_OnWorldLoaded()
 {
 	var stored, profile, file : string;
 
-	file    = ModSaveNames_LoadFile;
+	file    = ModSaveNames_LoadedFileGet();
 	stored  = ModSaveNames_StoredLabel();
 	profile = ModSaveNames_Profile();
 
@@ -476,10 +506,9 @@ function ModSaveNames_OnWorldLoaded()
 		ModSaveNames_StoreLabel(profile);
 	}
 
-	if (StrLen(file) > 0)
+	if (StrLen(file) > 0 && ModSaveNames_MapPut(file, profile))
 	{
-		ModSaveNames_MapPut(file, profile);
-		ModSaveNames_LoadFile = "";
+		// the save that was just loaded belongs to whoever is playing it now
 		ModSaveNames_MapFlush();
 	}
 
@@ -511,7 +540,10 @@ function ModSaveNames_ClaimAll(owner : string) : int
 		}
 	}
 
-	ModSaveNames_MapFlush();
+	if (claimed > 0)
+	{
+		ModSaveNames_MapFlush();
+	}
 
 	return claimed;
 }
@@ -525,12 +557,24 @@ function ModSaveNames_ClaimAll(owner : string) : int
 @wrapMethod(CR4IngameMenu)
 function LoadSaveRequested(saveSlotRef : SSavegameInfo) : void
 {
-	ModSaveNames_LoadFile = saveSlotRef.filename;
+	ModSaveNames_LoadedFileSet(saveSlotRef.filename);
 
 	wrappedMethod(saveSlotRef);
 }
 
+// A new game is about to start: whatever save was loaded before is not the one
+// being played any more, so the pointer the console commands use is cleared.
+@wrapMethod(CR4IngameMenu)
+function NewGameRequested() : void
+{
+	wrappedMethod();
+
+	ModSaveNames_LoadedFileSet("");
+}
+
 // A save finished: learn the file the engine just wrote.
+// Vanilla declares this as an event, so - like the OnSpawned wrap that has been
+// running since 0.2 - the wrapper carries no return type either.
 @wrapMethod(CR4Game)
 function OnSaveCompleted(type : ESaveGameType, succeeded : bool)
 {
