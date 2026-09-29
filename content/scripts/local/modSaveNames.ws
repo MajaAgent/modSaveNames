@@ -1,5 +1,5 @@
 /***********************************************************************/
-/**  modSaveNames 0.1.3
+/**  modSaveNames 0.1.4
 /**  Custom save names for The Witcher 3: Wild Hunt (5.0 / next-gen)
 /**
 /**  WHAT IT DOES
@@ -19,16 +19,19 @@
 /**  create or persist a name: scripts have no file access. Renamer = truth,
 /**  mod = display (and it makes the name readable without the noise).
 /**
-/**  MEASURED ON 5.0 (in-game, modSaveNames_hud(), save file renamed to kamil.sav)
-/**    file   = "kamil"                                    (no extension)
-/**    engine = "kamil - wtorek, 29 września 2026 20:38:57"  (fallback: name+date)
-/**    slotType = 3
-/**  Two conclusions that shape everything:
-/**    * the engine really does fall back to the file name, so renaming a save
-/**      renames it in the menu - that is the whole "storage" mechanism;
-/**    * it falls back only because it cannot classify the file, so a save the
-/**      game writes itself (an overwrite) comes back under the game's own name
-/**      and the custom text is gone until the renamer re-applies it.
+/**  MEASURED ON 5.0 (in-game, modSaveNames_hud(); 14 saves, one renamed by hand)
+/**    file      = "manualsave_53db9_7ea47000_5a6e4ad"   engine names are LOWER CASE
+/**    engine    = "Bestia z Białego Sadu - wtorek, 29 września 2026 22:51:58"
+/**    renamed   = "kamil"  ->  engine "kamil - wtorek, ..." (fallback: name+date)
+/**    slotType  = 1 autosave | 2 quicksave | 3 manual | 5 checkpoint
+/**  Conclusions that shape everything:
+/**    * a normal save's name is <quest name> + date; the engine loses the quest
+/**      lookup for a file it cannot classify and falls back to the file name -
+/**      so the file name is the only per-save text storage we have;
+/**    * a hand-renamed save keeps its type (kamil still reports 3 = manual), so
+/**      it stays in the right tab;
+/**    * an overwrite is a NEW file under the game's own name, so the custom text
+/**      is gone until the renamer re-applies it.
 /**
 /**  HOW IT HOOKS
 /**  The save list rows are assembled in script, in
@@ -105,23 +108,33 @@ function ModSaveNames_Prettify(label : string) : string
 }
 
 
-// The game names its own saves "ManualSave_8559a_7ea47000_515dab8" (type, then
-// engine ids). Anything else in the folder was renamed by a human - which is
-// how a hand-renamed save ends up in the menu at all: measured on 5.0 with a
-// file renamed to kamil.sav, the engine reported
+// The game names its own saves "<type>_<id>_<id>_<id>" - and it reports them in
+// LOWER CASE ("manualsave_53db9_7ea47000_5a6e4ad"), even though the files on disk
+// are "ManualSave_...". The comparison must therefore be case-insensitive: a
+// case-sensitive version of this function made every vanilla save look
+// hand-renamed and the menu printed raw file names.
+// Measured types on 5.0: autosave / quicksave / manualsave / checkpoint.
+//
+// Anything else in the folder was renamed by a human - which is how a
+// hand-renamed save ends up in the menu at all: measured on 5.0 with a file
+// renamed to kamil.sav, the engine reported
 //     name = "kamil - wtorek, 29 września 2026 20:38:57"
 // i.e. it could not classify the file, so it fell back to <file name> + date.
 // We treat such a file as "the whole name is the custom name".
 function ModSaveNames_IsEngineName(filename : string) : bool
 {
-	if (StrBeginsWith(filename, "ManualSave"))		{ return true; }
-	if (StrBeginsWith(filename, "AutoSave"))		{ return true; }
-	if (StrBeginsWith(filename, "QuickSave"))		{ return true; }
-	if (StrBeginsWith(filename, "CheckPoint"))		{ return true; }
-	if (StrBeginsWith(filename, "ForcedCheckPoint")){ return true; }
-	if (StrBeginsWith(filename, "PointOfNoReturn"))	{ return true; }
-	if (StrBeginsWith(filename, "ImportSave"))		{ return true; }
-	if (StrBeginsWith(filename, "Save"))			{ return true; }
+	var lower : string;
+
+	lower = StrLower(filename);
+
+	if (StrBeginsWith(lower, "manualsave"))			{ return true; }
+	if (StrBeginsWith(lower, "autosave"))			{ return true; }
+	if (StrBeginsWith(lower, "quicksave"))			{ return true; }
+	if (StrBeginsWith(lower, "checkpoint"))			{ return true; }
+	if (StrBeginsWith(lower, "forcedcheckpoint"))	{ return true; }
+	if (StrBeginsWith(lower, "pointofnoreturn"))	{ return true; }
+	if (StrBeginsWith(lower, "importsave"))			{ return true; }
+	if (StrBeginsWith(lower, "save"))				{ return true; }
 
 	return false;
 }
@@ -312,7 +325,7 @@ function IngameMenu_PopulateImportSaveData(flashStorageUtility : CScriptedFlashV
 
 function ModSaveNames_Version() : string
 {
-	return "0.1.3";
+	return "0.1.4";
 }
 
 function ModSaveNames_Clip(text : string, maxLen : int) : string

@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.1.4 — case-insensitive: vanilla saves show their quest names again
+
+Regression from 0.1.3, found in the first 14-save dump: the engine reports save
+file names **in lower case** (`manualsave_53db9_7ea47000_5a6e4ad`) even though the
+files on disk are `ManualSave_...`, and `StrBeginsWith` is case-sensitive. Every
+vanilla save was therefore treated as hand-renamed and the load menu printed raw
+file names (`checkpoint_53db9_...`) instead of quest names. Fixed by lower-casing
+before the prefix test, and the prefix list now matches what 5.0 really writes.
+
+What that same dump proved:
+
+* the display name of a normal save is `<quest name> - <date>`, e.g.
+  `Bestia z Białego Sadu - wtorek, 29 września 2026 22:51:58`; renaming a file
+  makes the engine lose that lookup and fall back to `<file name> - <date>`
+* `ESaveGameType` values read off the dump: `1` autosave, `2` quicksave,
+  `3` manual, `5` checkpoint — and a hand-renamed `kamil` still reports `3`,
+  so the type lives inside the save, not in the file name
+* the `@replaceMethod` hook really does take over the menu (the rows changed)
+
 ## 0.1.3 — a hand-renamed save shows its own name
 
 * Measured in-game: for a file renamed to `kamil.sav` the engine reports

@@ -58,23 +58,29 @@ Each `modSaveNames_hud()` message shows, for one save:
 HUD messages queue up, a few seconds each. This single command tells us whether the
 mod's whole API surface works on this game version, without touching the menu.
 
-## What the dump already told us (5.0, in-game)
-
-A save file renamed by hand to `kamil.sav` produced:
+## What the dump already told us (5.0, in-game, 14 saves)
 
 ```
-#6 slotType=3 file=kamil | engine='kamil - wtorek, 29 września 2026 20:38:57' | shows='kamil'
+[0] slotType=5 file=checkpoint_53db9_7ea47000_5b3e83f | engine='Bestia z Białego Sadu - wtorek, 29 września 2026 22:51:58' | shows=...
+[2] slotType=3 file=manualsave_53db9_7ea47000_5a6e4ad | engine='Bestia z Białego Sadu - wtorek, 29 września 2026 22:38:57' | shows=...
+[4] slotType=1 file=autosave_53db9_7ea47000_565809a   | engine='Bestia z Białego Sadu - wtorek, 29 września 2026 21:37:32' | shows=...
+[6] slotType=3 file=kamil                               | engine='kamil - wtorek, 29 września 2026 20:38:57'                 | shows='kamil'
+[7] slotType=2 file=quicksave_119500_7e920c00_4992ed0  | engine='Poszukiwania: arcymistrzowski rynsztunek Mantikory - niedziela, 4 maja 2025 18:25:11'
 ```
 
-* `file` has **no extension** — `save.filename` is the bare base name.
-* `engine` = `<file name> + " - " + localized date`: the engine could not classify
-  the file (its naming scheme is `ManualSave_<id>_<id>_<id>`), so it fell back to
-  the file name. This is why hand-renaming a save renames it in the menu — and why
-  an overwrite loses the name: the game writes a save file with its own name again.
-* `slotType` is `ESaveGameType` (native enum, values not in the script dump). Which
-  number means what can be read off the dump itself: a file the game created,
-  e.g. `ManualSave_*`, reports the value of `SGT_Manual`.
-* `shows` is what this mod puts in the row — nothing else changed in the row.
+* A normal save's display name is **`<quest name> - <date>`** (`Bestia z Białego
+  Sadu`, `Zlecenie: Zaginiony brat`, `Gwint: Talia Skellige`, ...). Different saves
+  of the same quest share a name — which is exactly why custom names are wanted.
+* `save.filename` has **no extension** and is reported **in lower case**
+  (`manualsave_...`) although the files on disk are `ManualSave_...`. Compare file
+  names case-insensitively — a case-sensitive prefix test made every vanilla save
+  look hand-renamed (0.1.4 fixed that).
+* A hand-renamed file (`kamil.sav`) loses the quest lookup and the engine falls back
+  to `<file name> + " - " + localized date`. Its `slotType` is still `3` (manual),
+  so the type lives inside the save and the file stays in the right tab.
+* `ESaveGameType` values read off the dump: `1` autosave, `2` quicksave, `3` manual,
+  `5` checkpoint.
+* `shows` is what this mod puts in the row; everything else in the row is vanilla.
 
 ## Where does the log go?
 

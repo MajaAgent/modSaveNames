@@ -18,6 +18,7 @@
 
 
 
+
 // ------------------------------------------------------------------ knobs ----
 
 // Show the engine's own name after your label, e.g.
@@ -67,23 +68,33 @@ function ModSaveNames_Prettify(label : string) : string
 }
 
 
-// The game names its own saves "ManualSave_8559a_7ea47000_515dab8" (type, then
-// engine ids). Anything else in the folder was renamed by a human - which is
-// how a hand-renamed save ends up in the menu at all: measured on 5.0 with a
-// file renamed to kamil.sav, the engine reported
+// The game names its own saves "<type>_<id>_<id>_<id>" - and it reports them in
+// LOWER CASE ("manualsave_53db9_7ea47000_5a6e4ad"), even though the files on disk
+// are "ManualSave_...". The comparison must therefore be case-insensitive: a
+// case-sensitive version of this function made every vanilla save look
+// hand-renamed and the menu printed raw file names.
+// Measured types on 5.0: autosave / quicksave / manualsave / checkpoint.
+//
+// Anything else in the folder was renamed by a human - which is how a
+// hand-renamed save ends up in the menu at all: measured on 5.0 with a file
+// renamed to kamil.sav, the engine reported
 //     name = "kamil - wtorek, 29 września 2026 20:38:57"
 // i.e. it could not classify the file, so it fell back to <file name> + date.
 // We treat such a file as "the whole name is the custom name".
 function ModSaveNames_IsEngineName(filename : string) : bool
 {
-	if (StrBeginsWith(filename, "ManualSave"))		{ return true; }
-	if (StrBeginsWith(filename, "AutoSave"))		{ return true; }
-	if (StrBeginsWith(filename, "QuickSave"))		{ return true; }
-	if (StrBeginsWith(filename, "CheckPoint"))		{ return true; }
-	if (StrBeginsWith(filename, "ForcedCheckPoint")){ return true; }
-	if (StrBeginsWith(filename, "PointOfNoReturn"))	{ return true; }
-	if (StrBeginsWith(filename, "ImportSave"))		{ return true; }
-	if (StrBeginsWith(filename, "Save"))			{ return true; }
+	var lower : string;
+
+	lower = StrLower(filename);
+
+	if (StrBeginsWith(lower, "manualsave"))			{ return true; }
+	if (StrBeginsWith(lower, "autosave"))			{ return true; }
+	if (StrBeginsWith(lower, "quicksave"))			{ return true; }
+	if (StrBeginsWith(lower, "checkpoint"))			{ return true; }
+	if (StrBeginsWith(lower, "forcedcheckpoint"))	{ return true; }
+	if (StrBeginsWith(lower, "pointofnoreturn"))	{ return true; }
+	if (StrBeginsWith(lower, "importsave"))			{ return true; }
+	if (StrBeginsWith(lower, "save"))				{ return true; }
 
 	return false;
 }
@@ -148,7 +159,7 @@ function ModSaveNames_MakeLabel(save : SSavegameInfo, engineName : string) : str
 
 function ModSaveNames_Version() : string
 {
-	return "0.1.3";
+	return "0.1.4";
 }
 
 function ModSaveNames_Clip(text : string, maxLen : int) : string
