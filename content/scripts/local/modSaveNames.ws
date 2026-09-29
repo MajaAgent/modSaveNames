@@ -118,8 +118,8 @@ function ModSaveNames_MakeLabel(save : SSavegameInfo, engineName : string) : str
 
 // Replaces the global function that builds every row of the load/save list.
 // @replaceMethod with NO parentheses = replace a global function (REDkit wiki,
-// "WS: Script Compilation Errors overrides"). Writing @replaceMethod() is a
-// syntax error: the parser expects a class name inside the parentheses.
+// "WS: Script Compilation Errors overrides"). Adding empty parentheses is a
+// syntax error - the parser expects a class name inside them.
 @replaceMethod
 function IngameMenu_PopulateSaveDataForSlotType(flashStorageUtility : CScriptedFlashValueStorage, saveType:int, parentObject:CScriptedFlashArray, allowEmptySlot:bool) : void
 {
