@@ -19,6 +19,11 @@ ARCHIVE="$DIST/$MOD_NAME-$VERSION.zip"
 
 PY="$(command -v python3 || command -v python)"
 
+# A shipped script must not reference a function that does not exist: there is no
+# WitcherScript compiler here, and a slipped rename only shows up as a red
+# "Script compilation errors" box in the game.
+"$PY" "$ROOT/tools/wscheck.py" "$ROOT/content/scripts/local/$MOD_NAME.ws"
+
 rm -rf "$STAGE"
 rm -f "$ARCHIVE"
 mkdir -p "$STAGE/mods/$MOD_NAME"

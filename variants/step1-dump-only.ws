@@ -22,6 +22,7 @@
 
 
 
+
 // ------------------------------------------------------------------ knobs ----
 
 // Show the engine's own name after your label, e.g.
@@ -282,14 +283,14 @@ exec function modSaveNames_dump()
 
 	theGame.ListSavedGames( saveGames, -1 );
 
-	LogChannel('modSaveNames', "modSaveNames 0.1.0 - " + IntToString(saveGames.Size()) + " save(s) visible");
+	LogChannel('modSaveNames', "modSaveNames 0.1.7 - " + IntToString(saveGames.Size()) + " save(s) visible");
 
 	for (i = 0; i < saveGames.Size(); i += 1)
 	{
 		engineName = theGame.GetDisplayNameForSavedGame(saveGames[i]);
-		label      = ModSaveNames_Prettify(ModSaveNames_ExtractLabel(saveGames[i].filename));
+		label      = ModSaveNames_CustomNameFromFilename(saveGames[i].filename);
 
-		LogChannel('modSaveNames', "[" + IntToString(i) + "] slotType=" + IntToString(saveGames[i].slotType) + " slotIndex=" + IntToString(saveGames[i].slotIndex));
+		LogChannel('modSaveNames', "[" + IntToString(i) + "] slot=" + IntToString(saveGames[i].slotIndex) + " type=" + IntToString(saveGames[i].slotType));
 		LogChannel('modSaveNames', "      file  : " + saveGames[i].filename);
 		LogChannel('modSaveNames', "      engine: " + engineName);
 		LogChannel('modSaveNames', "      label : '" + label + "'  -> menu shows: '" + ModSaveNames_MakeLabel(saveGames[i], engineName) + "'");
