@@ -654,7 +654,7 @@ exec function clearSaveName()
 
 function ModSaveNames_Version() : string
 {
-	return "0.3.4";
+	return "0.3.5";
 }
 
 function ModSaveNames_Clip(text : string, maxLen : int) : string

@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.3.5 - "Claimed 0 save(s)" was a real bug
+
+`saveNameClaimAll('Kamil')` claimed nothing even with 16 saves on disk, because
+`ModSaveNames_ClaimAll` only accepted the `"?"` marker while `ModSaveNames_MapOwner`
+answers **`""`** for a file it has no entry for - and an entry only appears once the
+load/save list has been built in that session (`ModSaveNames_SyncMap`). Start the game
+with *Continue* and the map is still empty, so every save fell through the test.
+
+Both mean the same thing to the player: *this save has no name yet*. `""` (never seen)
+and `"?"` (there before the mod was installed) are now both claimed, and the count
+reflects what `ModSaveNames_MapPut` actually changed.
+
+* `tools/test-owner-map.py` gains the case it was missing - `claim_all` over a named
+  save, a `"?"` save and an unseen one - plus a source-level guard: if the condition
+  ever stops accepting `""`, the build fails instead of shipping a no-op command.
+
 ## 0.3.4 - NULL cannot be compared (guard removed)
 
 `if (thePlayer == NULL)` does not compile: **`NULL` is a void literal**, so

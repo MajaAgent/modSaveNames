@@ -39,6 +39,13 @@ def read_constants(paths: list[str]) -> tuple[int, int]:
         if needed not in text:
             raise SystemExit(f"{needed} is missing from the .ws")
 
+    # ClaimAll must treat *both* "no entry" and the "?" marker as unclaimed. An empty
+    # map happens whenever the load/save list was not built yet in this session, and
+    # claiming then silently took nothing ("Claimed 0 save(s)").
+    if 'StrLen(current) == 0 || current == "?"' not in text:
+        raise SystemExit("ModSaveNames_ClaimAll no longer treats a save it has never "
+                         "seen (\"\") as unclaimed - only \"?\"")
+
     return int(parts.group(1)), int(limit.group(1))
 
 
@@ -88,6 +95,19 @@ def put(parts: list[str], file: str, who: str) -> list[str]:
     if not placed:
         parts[-1] += entry
     return parts
+
+
+def claim_all(parts: list[str], files: list[str], who: str) -> int:
+    """Mirror of ModSaveNames_ClaimAll: "" (no entry at all) and "?" (already there when
+    the mod was installed) both mean "this save has no name yet"."""
+    taken = 0
+    for f in files:
+        current = owner(parts, f)
+        if current == "" or current == "?":
+            put(parts, f, who)
+            if owner(parts, f) == clean_owner(who):
+                taken += 1
+    return taken
 
 
 def count(parts: list[str]) -> int:
@@ -174,6 +194,17 @@ def main() -> int:
     check("overwrite changed only that file",
           all(after[k] == v for k, v in before.items() if k != f"{long_name}_59"), True)
     check("overwrite landed", after[f"{long_name}_59"], "Brat")
+
+    # claiming: a save with an entry, one marked "?", and one the map never saw
+    claim_parts = ["" for _ in range(PARTS)]
+    put(claim_parts, "owned_1", "Brat")
+    put(claim_parts, "old_1", "?")
+    claim_files = ["owned_1", "old_1", "fresh_1"]
+    check("claim takes both unknown kinds", claim_all(claim_parts, claim_files, "Kamil"), 2)
+    check("claim named the old save", owner(claim_parts, "old_1"), "Kamil")
+    check("claim named the save it had never seen", owner(claim_parts, "fresh_1"), "Kamil")
+    check("claim left the other player's save alone", owner(claim_parts, "owned_1"), "Brat")
+    check("nothing left to claim", claim_all(claim_parts, claim_files, "Kamil"), 0)
 
     # a file that was never in the map cannot be removed by accident
     snapshot = [p for p in parts]

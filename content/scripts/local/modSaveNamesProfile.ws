@@ -513,12 +513,14 @@ function ModSaveNames_OnWorldLoaded()
 	ModSaveNames_AnnounceLabel();
 }
 
-// Claim every save the mod never put a name on - meant for the saves that were
-// already on disk at install time. Returns how many it took.
+// Claim every save that has no name yet - the ones already on disk at install time
+// (marked "?") and the ones the mod has not seen at all (no entry: SyncMap may not
+// have run yet this session). Returns how many it took.
 function ModSaveNames_ClaimAll(owner : string) : int
 {
 	var saveGames : array< SSavegameInfo >;
 	var i, claimed : int;
+	var current : string;
 
 	if (StrLen(owner) == 0)
 	{
@@ -531,10 +533,16 @@ function ModSaveNames_ClaimAll(owner : string) : int
 
 	for (i = 0; i < saveGames.Size(); i += 1)
 	{
-		if (ModSaveNames_MapOwner(saveGames[i].filename) == "?")
+		current = ModSaveNames_MapOwner(saveGames[i].filename);
+
+		// "" = no entry at all, "?" = it was here before the mod: nobody has it,
+		// so the player at the keyboard can take both.
+		if (StrLen(current) == 0 || current == "?")
 		{
-			ModSaveNames_MapPut(saveGames[i].filename, owner);
-			claimed += 1;
+			if (ModSaveNames_MapPut(saveGames[i].filename, owner))
+			{
+				claimed += 1;
+			}
 		}
 	}
 
