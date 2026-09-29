@@ -1,23 +1,32 @@
 /***********************************************************************/
-/**  modSaveNames 0.1.7
+/**  modSaveNames 0.2.0
 /**  Custom save names for The Witcher 3: Wild Hunt (5.0 / next-gen)
 /**
 /**  WHAT IT DOES
-/**  The save/load menu shows the name the engine derives for a save. When the
-/**  engine cannot derive one, it falls back to the save's file name - which is
-/**  why a hand-renamed save already shows your text, but polluted with the
-/**  type prefix, the marker and the engine ids:
-/**      ManualSave_[Rodrigo boss fight]_4711_9f2a11
-/**  This mod keeps the file naming scheme (the renamer's "tag" mode) and shows
-/**  only the label part:
-/**      Rodrigo boss fight
-/**  Saves without a label show the vanilla name, exactly as before.
+/**  1. WHOSE SAVE IS THIS (the reason the mod exists)
+/**     Two people share one PC and their saves look alike. `setSaveName('Kamil')`
+/**     writes a name INTO the save itself - the game's fact database, the vanilla
+/**     mechanism for script data that belongs to a save - and every time a world
+/**     is loaded the game says "Save: Kamil" on screen. The name travels with the
+/**     file, so it survives saving, quitting and loading, and needs no tool:
+/**         setSaveName('Kamil')    name this save (save the game to keep it)
+/**         showSaveName()          what this save says right now
+/**         clearSaveName()         drop the name
+/**  2. NAMES IN THE SAVE/LOAD LIST
+/**     That list is built from save FILE names, and the game's own name for a save
+/**     is "<quest name> - <date>" - identical for both players, because it is only
+/**     the quest and the time. So the label also goes into the file name, written
+/**     by the companion tool (scripts cannot touch files):
+/**         ManualSave_[Rodrigo boss fight]_4711_9f2a11    (tool, "tag" mode)
+/**     and this mod strips everything but the label for the menu row:
+/**         Rodrigo boss fight
+/**     Saves without a [label] show the vanilla name, exactly as before.
 /**
 /**  COMPANION TOOL
-/**  w3save_renamer.py (in the research folder) writes the [label] into the file
-/**  name and re-applies it after every overwrite (label memory). The mod cannot
-/**  create or persist a name: scripts have no file access. Renamer = truth,
-/**  mod = display (and it makes the name readable without the noise).
+/**  w3save_renamer.py writes the [label] into the file NAME, which is the only
+/**  way a name can show up in the save/load list before that save is loaded: the
+/**  list is built from file names, and scripts have no file access, so no mod can
+/**  rename a save file. Everything after the load is the mod's job.
 /**
 /**  MEASURED ON 5.0 (in-game, modSaveNames_hud(); 14 saves, one renamed by hand)
 /**    file      = "manualsave_53db9_7ea47000_5a6e4ad"   engine names are LOWER CASE
@@ -367,6 +376,228 @@ function IngameMenu_PopulateImportSaveData(flashStorageUtility : CScriptedFlashV
 }
 
 
+// ------------------------------------------------ whose save is this? --------
+//
+// The label lives IN the save, so it travels with the file: load a save and the
+// game tells you whose it is. Nothing else in the mod is needed for that.
+//
+// WHERE IT IS STORED
+// The game's fact database - the vanilla mechanism for script data that belongs
+// to a save ("Facts are used to store data in saves", scripts/game/facts.ws). A
+// fact holds one int, so a label travels packed four characters per fact as
+// base-100 digits, with its length in a fact of its own. Facts are addressed by
+// name and are written to disk when the game saves, which is why setSaveName
+// reminds you to save.
+//
+// WHY NOT @addField(CR4Player) + "saved var" (the other way mods do this)?
+// It persists just as well, but a field that has been written into a save may
+// never be removed from the mod again: a save whose stored field no longer
+// exists in the code fails to load. Facts carry no such coupling, so the mod can
+// still be uninstalled.
+//
+// The alphabet is 92 characters (letters incl. Polish, digits, space, common
+// punctuation) and stays below 100, which is what makes base-100 packing work.
+// Anything outside it becomes 'A'. Labels are capped at 32 characters.
+
+function ModSaveNames_Alphabet() : string
+{
+	return "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 -_.:,!?()ąćęłńóśźżĄĆĘŁŃÓŚŹŻ";
+}
+
+// how many facts one label may use - 4 characters fit into each
+function ModSaveNames_LabelSlots() : int
+{
+	return 8;
+}
+
+// base-100 digit weights: 1, 100, 10000, 1000000
+function ModSaveNames_PackFactor(digit : int) : int
+{
+	if (digit == 0) { return 1; }
+	if (digit == 1) { return 100; }
+	if (digit == 2) { return 10000; }
+
+	return 1000000;
+}
+
+function ModSaveNames_FactID(slot : int) : string
+{
+	return "modSaveNames_" + IntToString(slot);
+}
+
+// Put the label into the save (nothing reaches the disk until the game saves).
+function ModSaveNames_StoreLabel(label : string)
+{
+	var alphabet : string;
+	var length, slot, digit, code, value, index : int;
+	var ch : string;
+
+	alphabet = ModSaveNames_Alphabet();
+	length   = StrLen(label);
+
+	if (length > ModSaveNames_LabelSlots() * 4)
+	{
+		length = ModSaveNames_LabelSlots() * 4;
+	}
+
+	FactsSet("modSaveNames_len", length);
+
+	for (slot = 0; slot < ModSaveNames_LabelSlots(); slot += 1)
+	{
+		value = 0;
+
+		for (digit = 0; digit < 4; digit += 1)
+		{
+			index = slot * 4 + digit;
+
+			if (index < length)
+			{
+				ch   = StrMid(label, index, 1);
+				code = StrFindFirst(alphabet, ch);
+
+				if (code < 0)
+				{
+					code = 0;
+				}
+			}
+			else
+			{
+				code = 0;
+			}
+
+			value += code * ModSaveNames_PackFactor(digit);
+		}
+
+		FactsSet(ModSaveNames_FactID(slot), value);
+	}
+}
+
+// Read the label back out of the save. "" when the save carries none.
+function ModSaveNames_StoredLabel() : string
+{
+	var alphabet : string;
+	var length, slot, digit, code, value, index : int;
+	var label : string;
+
+	alphabet = ModSaveNames_Alphabet();
+	length   = FactsQueryLatestValue("modSaveNames_len");
+
+	if (length <= 0)
+	{
+		return "";
+	}
+
+	if (length > ModSaveNames_LabelSlots() * 4)
+	{
+		length = ModSaveNames_LabelSlots() * 4;
+	}
+
+	label = "";
+
+	for (slot = 0; slot < ModSaveNames_LabelSlots(); slot += 1)
+	{
+		value = FactsQueryLatestValue(ModSaveNames_FactID(slot));
+
+		for (digit = 0; digit < 4; digit += 1)
+		{
+			index = slot * 4 + digit;
+			code  = value - (value / 100) * 100;
+			value = value / 100;
+
+			if (index < length)
+			{
+				label = label + StrMid(alphabet, code, 1);
+			}
+		}
+	}
+
+	return label;
+}
+
+// The line the player reads when a save is loaded.
+function ModSaveNames_AnnounceLabel()
+{
+	var label : string;
+
+	if (thePlayer == null)
+	{
+		return;
+	}
+
+	label = ModSaveNames_StoredLabel();
+
+	if (StrLen(label) > 0)
+	{
+		thePlayer.DisplayHudMessage("Save: " + label);
+	}
+	else
+	{
+		thePlayer.DisplayHudMessage("Unnamed save - name it with: setSaveName('Kamil')");
+	}
+}
+
+// The player object is spawned every time a world is loaded, which is exactly the
+// moment we want to answer "whose save did I just load?". Wrapping the event (not
+// replacing anything) is the merge-free bootstrap other mods use.
+@wrapMethod(CR4Player)
+function OnSpawned(spawnData : SEntitySpawnData)
+{
+	wrappedMethod(spawnData);
+
+	ModSaveNames_AnnounceLabel();
+}
+
+
+// ------------------------------------------------------------------ console ----
+//
+//   setSaveName('Kamil')   name the save you are playing; save the game to keep it
+//   showSaveName()         what this save says right now
+//   clearSaveName()        remove the name from this save
+
+exec function setSaveName(name : string)
+{
+	if (thePlayer == null)
+	{
+		return;
+	}
+
+	ModSaveNames_StoreLabel(name);
+	thePlayer.DisplayHudMessage("This save is now '" + name + "' - save the game to keep it");
+}
+
+exec function showSaveName()
+{
+	var label : string;
+
+	if (thePlayer == null)
+	{
+		return;
+	}
+
+	label = ModSaveNames_StoredLabel();
+
+	if (StrLen(label) > 0)
+	{
+		thePlayer.DisplayHudMessage("This save: " + label);
+	}
+	else
+	{
+		thePlayer.DisplayHudMessage("This save has no name - use setSaveName('Kamil')");
+	}
+}
+
+exec function clearSaveName()
+{
+	if (thePlayer == null)
+	{
+		return;
+	}
+
+	ModSaveNames_StoreLabel("");
+	thePlayer.DisplayHudMessage("Save name cleared");
+}
+
+
 // ------------------------------------------------------- in-game test tool ----
 
 // Run from the debug console (~ with DBGConsoleOn=true, see the REDkit wiki).
@@ -382,7 +613,7 @@ function IngameMenu_PopulateImportSaveData(flashStorageUtility : CScriptedFlashV
 
 function ModSaveNames_Version() : string
 {
-	return "0.1.7";
+	return "0.2.0";
 }
 
 function ModSaveNames_Clip(text : string, maxLen : int) : string
@@ -423,7 +654,8 @@ exec function modSaveNames_hud()
 
 	theGame.ListSavedGames( saveGames, -1 );
 
-	GetWitcherPlayer().DisplayHudMessage("modSaveNames: " + IntToString(saveGames.Size()) + " save(s)");
+	GetWitcherPlayer().DisplayHudMessage("modSaveNames " + ModSaveNames_Version() + ": " + IntToString(saveGames.Size()) + " save(s)");
+	GetWitcherPlayer().DisplayHudMessage("this save's label: '" + ModSaveNames_StoredLabel() + "'");
 
 	LogChannel('modSaveNames', "----- modSaveNames " + ModSaveNames_Version() + " - "
 		+ IntToString(saveGames.Size()) + " save(s) -----");
@@ -445,7 +677,7 @@ exec function modSaveNames_dump()
 
 	theGame.ListSavedGames( saveGames, -1 );
 
-	LogChannel('modSaveNames', "modSaveNames 0.1.7 - " + IntToString(saveGames.Size()) + " save(s) visible");
+	LogChannel('modSaveNames', "modSaveNames 0.2.0 - " + IntToString(saveGames.Size()) + " save(s) visible");
 
 	for (i = 0; i < saveGames.Size(); i += 1)
 	{

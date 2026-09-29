@@ -130,6 +130,22 @@ compiled scripts with logging (community advice from the pre-REDkit era; unverif
 
 Without the mod the row shows the whole file name; with it, only the label.
 
+## 6. Whose save is this (0.2.0)
+
+In game, in the console:
+
+```
+setSaveName('Kamil')     # then SAVE THE GAME - saving is what writes it into the save
+showSaveName()           # what this save carries right now
+```
+
+Quit, relaunch, load that save: the HUD says `Save: Kamil`. A save that carries no name
+says so and prints the command. `modSaveNames_hud()` also prints
+`this save's label: '...'`, so you can check without reloading.
+
+If the name is gone after loading, the game most likely never saved after
+`setSaveName` (the fact DB is part of the save, so nothing is written before that).
+
 ## When it does not work
 
 * **A "Script Compilation Errors" message at startup.** Good news: it prints the

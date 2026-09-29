@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.2.0 — whose save is it
+
+* **A name stored inside the save.** `setSaveName('X')` writes it into the save you are
+  playing (the game's fact database — the vanilla place for script data that belongs to
+  a save), and every world load now prints `Save: X` on screen. That is what makes two
+  players' saves tellable apart with no file handling at all. `showSaveName()` /
+  `clearSaveName()` round it out.
+* For that message the mod wraps the player's own `OnSpawned` event
+  (`@wrapMethod(CR4Player)`) — the merge-free bootstrap pattern. The list labels from
+  0.1.x are unchanged.
+* Deliberately facts and not `@addField(CR4Player) + saved var`: a field once written
+  into a save may never be removed from the mod again, while facts leave the mod
+  safely uninstallable.
+
 ## 0.1.7 — label characters, settled
 
 Characters Windows forbids (`<>:"/\|?*`) are now written into the file name as a

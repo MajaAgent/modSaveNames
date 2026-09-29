@@ -24,6 +24,10 @@ PY="$(command -v python3 || command -v python)"
 # "Script compilation errors" box in the game.
 "$PY" "$ROOT/tools/wscheck.py" "$ROOT/content/scripts/local/$MOD_NAME.ws"
 
+# The label format (4 characters per int fact, base 100) is mirrored in Python
+# because WitcherScript cannot run here: a mismatch would silently mangle names.
+"$PY" "$ROOT/tools/test-label-packing.py" "$ROOT/content/scripts/local/$MOD_NAME.ws"
+
 rm -rf "$STAGE"
 rm -f "$ARCHIVE"
 mkdir -p "$STAGE/mods/$MOD_NAME"
