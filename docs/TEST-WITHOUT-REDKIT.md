@@ -1,5 +1,4 @@
 # Testing the mod in 5 minutes (no REDkit needed)
-
 A script mod is not cooked or compiled by REDkit before use: the game compiles
 `mods/<mod name>/content/scripts/local/*.ws` itself, at launch. That means the mod
 can be tried out with nothing but the game installed — this is exactly the flow the
@@ -45,18 +44,45 @@ Start the game and load any save (loading once is what makes the game list saves
 Press `~`, paste, press Enter (Ctrl+V works in the console):
 
 ```
-modSaveNames_dump()
+modSaveNames_hello()      # one HUD message -> the mod is loaded
+modSaveNames_hud()        # the dump, printed ON SCREEN (no launch flags needed)
+modSaveNames_dump()       # same data, written to the script log (see below)
 ```
 
-It prints, for every save the game knows about:
+Each `modSaveNames_hud()` message shows, for one save:
 
-* `file:` the file name on disk — the only place a custom name can live
-* `engine:` `GetDisplayNameForSavedGame(...)` — what vanilla would show
-* `modSaveNames:` the label the mod would display
+* `file=` the file name on disk — the only place a custom name can live
+* `engine=` `GetDisplayNameForSavedGame(...)` — what vanilla would show
+* `shows=` the label this mod would display
 
-Look for the log lines (channel `modSaveNames`). This single command tells us
-whether the mod's whole API surface works on this game version, without touching
-the menu.
+HUD messages queue up, a few seconds each. This single command tells us whether the
+mod's whole API surface works on this game version, without touching the menu.
+
+## Where does the log go?
+
+The console does **not** echo `LogChannel` output — that is why a log-only dump looks
+like it did nothing. Script logs are written to:
+
+```
+%USERPROFILE%\Documents\The Witcher 3\scriptlog.txt
+```
+
+and only when the game is started with the `-debugscripts` flag (the wiki also lists
+`-net`, which additionally lets Script Studio connect). Steam: game → Properties →
+Launch Options → `-debugscripts`. Shortcut: append the flag to the Target field:
+
+```
+"...\bin\x64\witcher3.exe" -net -debugscripts
+```
+
+Then watch the file live (PowerShell `Get-Content "$env:USERPROFILE\Documents\The Witcher 3\scriptlog.txt" -Wait`,
+Notepad++ with "tail", or SnakeTail) and grep for the `modSaveNames` channel. The
+vanilla scripts are chatty, so filter by channel.
+
+If the file stays empty: delete/rename the `.redscripts` files in
+`<game>\content\content0\` and launch again with the flag — the game then regenerates
+compiled scripts with logging (community advice from the pre-REDkit era; unverified on
+5.0, so try it only if the log really stays empty).
 
 ## 5. Then check the menu
 

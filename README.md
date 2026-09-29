@@ -29,7 +29,8 @@ a script mod is just a folder. Full walkthrough:
 enable it in `mods.settings`, turn on the console, then run the built-in diagnostic:
 
 ```
-modSaveNames_dump()      # prints file name / engine name / mod label for every save
+modSaveNames_hello()     # one message on screen: the mod is loaded
+modSaveNames_hud()       # per save: file name / engine name / label this mod shows
 ```
 
 Nothing in the mod touches save data; deleting the folder restores vanilla.

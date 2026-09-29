@@ -1,5 +1,5 @@
 /***********************************************************************/
-/**  modSaveNames 0.1.0
+/**  modSaveNames 0.1.2
 /**  Custom save names for The Witcher 3: Wild Hunt (5.0 / next-gen)
 /**
 /**  WHAT IT DOES
@@ -242,11 +242,72 @@ function IngameMenu_PopulateImportSaveData(flashStorageUtility : CScriptedFlashV
 
 // ------------------------------------------------------- in-game test tool ----
 
-// Run from the debug console (~ with DBGConsoleOn=true, see the REDkit wiki):
-//     modSaveNames_dump()
-// Prints every save the game can see, its vanilla name and the label this mod
-// would show. This is how you verify the hook without hunting through the menu -
-// and how you tell me what the engine reports for a renamed save.
+// Run from the debug console (~ with DBGConsoleOn=true, see the REDkit wiki).
+// Two ways out, because the console does NOT echo log output:
+//
+//   modSaveNames_hello()   -> one HUD message: proves the mod is loaded
+//   modSaveNames_hud()     -> the dump, printed ON SCREEN (no launch flags needed)
+//   modSaveNames_dump()    -> the same data, written to the script log channel
+//                             (needs the game started with -debugscripts, see
+//                              docs/TEST-WITHOUT-REDKIT.md)
+//
+// Prints every save the game can see, the vanilla name and this mod's label.
+
+function ModSaveNames_Version() : string
+{
+	return "0.1.2";
+}
+
+function ModSaveNames_Clip(text : string, maxLen : int) : string
+{
+	if (StrLen(text) <= maxLen)
+	{
+		return text;
+	}
+
+	return StrLeft(text, maxLen) + "...";
+}
+
+function ModSaveNames_Summary(save : SSavegameInfo) : string
+{
+	var engineName : string;
+
+	engineName = theGame.GetDisplayNameForSavedGame(save);
+
+	return "slotType=" + IntToString(save.slotType)
+		+ " file=" + save.filename
+		+ " | engine='" + engineName + "'"
+		+ " | shows='" + ModSaveNames_MakeLabel(save, engineName) + "'";
+}
+
+// One line on the HUD: proves the script is loaded and running.
+exec function modSaveNames_hello()
+{
+	GetWitcherPlayer().DisplayHudMessage("modSaveNames " + ModSaveNames_Version() + ": loaded");
+	LogChannel('modSaveNames', "hello - version " + ModSaveNames_Version());
+}
+
+// The dump on screen, in HUD messages (they queue up, a few seconds each).
+exec function modSaveNames_hud()
+{
+	var saveGames : array< SSavegameInfo >;
+	var i : int;
+
+	theGame.ListSavedGames( saveGames, -1 );
+
+	GetWitcherPlayer().DisplayHudMessage("modSaveNames: " + IntToString(saveGames.Size()) + " save(s)");
+
+	LogChannel('modSaveNames', "----- modSaveNames " + ModSaveNames_Version() + " - "
+		+ IntToString(saveGames.Size()) + " save(s) -----");
+
+	for (i = 0; i < saveGames.Size(); i += 1)
+	{
+		GetWitcherPlayer().DisplayHudMessage("#" + IntToString(i) + " " + ModSaveNames_Clip(ModSaveNames_Summary(saveGames[i]), 140));
+		LogChannel('modSaveNames', "[" + IntToString(i) + "] " + ModSaveNames_Summary(saveGames[i]));
+	}
+}
+
+// Log-only version (scriptlog.txt). Kept separate so the on-screen one stays short.
 exec function modSaveNames_dump()
 {
 	var saveGames : array< SSavegameInfo >;

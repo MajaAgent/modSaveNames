@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.2 — output you can actually see
+
+* The console never echoed `LogChannel` output (script logs only appear in
+  `Documents\The Witcher 3\scriptlog.txt`, and only with the `-debugscripts` launch
+  flag), so the diagnostic looked like it did nothing. Added:
+  * `modSaveNames_hello()` — one HUD message: proof the script is loaded.
+  * `modSaveNames_hud()` — the same dump, printed on screen via
+    `GetWitcherPlayer().DisplayHudMessage()` (no launch flags needed).
+  * `modSaveNames_dump()` — stays log-only, for the `scriptlog.txt` route.
+* Docs: where the log lives, how to launch with `-debugscripts`, how to watch the file.
+
 ## 0.1.1 — first compile error fixed
 
 * **`@replaceMethod()` → `@replaceMethod`.** The empty parentheses are a syntax
