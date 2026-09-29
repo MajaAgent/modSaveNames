@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.3.6 - a diagnostic command (the map reads back empty)
+
+Kamil's run: `saveNameClaimAll('Kamil')` reported 18 saves, the load list showed nothing,
+and `saveNameSettings()` said `map=0 entries, 0 chars` - with `installed=''`, which
+`ModSaveNames_SyncMap` writes on its very first pass. So the mod's writes to the
+`ModSaveNames` settings group do not come back when read, on the same session.
+
+The read and the write use the same calls (`GetVarValue`/`SetVarValue` with
+`'ModSaveNames'` and `'P0'..'P7'`), so this is the settings API, not the map code. Before
+guessing at a fix, `saveNameDiag()` asks the API directly: the number of groups, the index
+of the mod's group (`-1` = the game does not know it), whether a vanilla key can be read
+at all, and three write-then-read probes - the mod's own group with `SetVarValue`, the
+same with `SetVarValueByStr`, and a new key in the `'Hidden'` group the game itself ships -
+each repeated after `SaveUserSettings()`. Output goes to the log (`scriptlog.txt`).
+
 ## 0.3.5 - "Claimed 0 save(s)" was a real bug
 
 `saveNameClaimAll('Kamil')` claimed nothing even with 16 saves on disk, because

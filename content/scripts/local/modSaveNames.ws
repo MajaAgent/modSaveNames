@@ -654,7 +654,7 @@ exec function clearSaveName()
 
 function ModSaveNames_Version() : string
 {
-	return "0.3.5";
+	return "0.3.6";
 }
 
 function ModSaveNames_Clip(text : string, maxLen : int) : string
@@ -686,6 +686,77 @@ exec function modSaveNames_hello()
 	GetWitcherPlayer().DisplayHudMessage("modSaveNames " + ModSaveNames_Version() + ": loaded");
 	LogChannel('modSaveNames', "hello - version " + ModSaveNames_Version());
 }
+
+// One command that answers "why is the map empty" without another round trip. It asks
+// the settings API itself: can it read a key the game shipped, does a write to a group
+// the game does not know come back when read, and does it survive SaveUserSettings?
+// Everything goes to the log as well as the HUD. Harmless junk keys only.
+exec function saveNameDiag()
+{
+	var cfg : CInGameConfigWrapper;
+	var groups, groupIdx, parts, chars, i, len : int;
+	var probeA, probeB, probeC, vanillaKey : string;
+
+	cfg = theGame.GetInGameConfigWrapper();
+	theGame.SaveUserSettings();
+
+	groups   = cfg.GetGroupsNum();
+	groupIdx = cfg.GetGroupIdx("ModSaveNames");
+	vanillaKey = cfg.GetVarValue('Gameplay', 'CrossProgression');
+
+	LogChannel('modSaveNames', "===== diag " + ModSaveNames_Version() + " =====");
+	LogChannel('modSaveNames', "groups in the config: " + IntToString(groups));
+	LogChannel('modSaveNames', "group 'ModSaveNames' index: " + IntToString(groupIdx) + "  (-1 = the game does not know this group)");
+	LogChannel('modSaveNames', "read a vanilla key ('Gameplay','CrossProgression'): '" + vanillaKey + "'");
+
+	// write to the group the mod uses, read it straight back
+	cfg.SetVarValue('ModSaveNames', 'Probe', "hello");
+	probeA = cfg.GetVarValue('ModSaveNames', 'Probe');
+
+	// the same with the ByStr flavour (string group name)
+	cfg.SetVarValueByStr("ModSaveNames", 'ProbeStr', "hello");
+	probeB = cfg.GetVarValueByStr("ModSaveNames", 'ProbeStr');
+
+	// a new key in a group the game itself ships
+	cfg.SetVarValue('Hidden', 'ModSaveNamesProbe', "hello");
+	probeC = cfg.GetVarValue('Hidden', 'ModSaveNamesProbe');
+
+	LogChannel('modSaveNames', "write+read own group      (SetVarValue):     '" + probeA + "'");
+	LogChannel('modSaveNames', "write+read own group      (SetVarValueByStr): '" + probeB + "'");
+	LogChannel('modSaveNames', "write+read 'Hidden' group (SetVarValue):     '" + probeC + "'");
+
+	theGame.SaveUserSettings();
+
+	LogChannel('modSaveNames', "after SaveUserSettings: own='" + cfg.GetVarValue('ModSaveNames', 'Probe')
+		+ "' byStr='" + cfg.GetVarValueByStr("ModSaveNames", 'ProbeStr')
+		+ "' hidden='" + cfg.GetVarValue('Hidden', 'ModSaveNamesProbe') + "'");
+
+	// the state the mod itself would report
+	parts = 0;
+	chars = 0;
+	for (i = 0; i < ModSaveNames_MapParts(); i += 1)
+	{
+		len = StrLen(ModSaveNames_ConfigGetPart(i));
+
+		if (len > 0)
+		{
+			parts += 1;
+			chars += len;
+		}
+	}
+
+	LogChannel('modSaveNames', "map: " + IntToString(parts) + " non-empty part(s), " + IntToString(chars) + " chars");
+	LogChannel('modSaveNames', "installed='" + cfg.GetVarValue('ModSaveNames', 'Installed')
+		+ "' profile='" + cfg.GetVarValue('ModSaveNames', 'Profile') + "'");
+	LogChannel('modSaveNames', "===== end of diag: send this to Maja =====");
+
+	thePlayer.DisplayHudMessage("diag: groups=" + IntToString(groups)
+		+ " idx=" + IntToString(groupIdx)
+		+ " own='" + probeA
+		+ "' hidden='" + probeC + "'");
+	thePlayer.DisplayHudMessage("diag: map " + IntToString(parts) + " part(s), " + IntToString(chars) + " chars - full output in scriptlog.txt");
+}
+
 
 // The dump on screen, in HUD messages (they queue up, a few seconds each).
 exec function modSaveNames_hud()
