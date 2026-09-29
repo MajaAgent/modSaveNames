@@ -1,32 +1,50 @@
 /***********************************************************************/
-/**  modSaveNames 0.2.0
+/**  modSaveNames 0.3.0
 /**  Custom save names for The Witcher 3: Wild Hunt (5.0 / next-gen)
 /**
-/**  WHAT IT DOES
-/**  1. WHOSE SAVE IS THIS (the reason the mod exists)
-/**     Two people share one PC and their saves look alike. `setSaveName('Kamil')`
-/**     writes a name INTO the save itself - the game's fact database, the vanilla
-/**     mechanism for script data that belongs to a save - and every time a world
-/**     is loaded the game says "Save: Kamil" on screen. The name travels with the
-/**     file, so it survives saving, quitting and loading, and needs no tool:
-/**         setSaveName('Kamil')    name this save (save the game to keep it)
-/**         showSaveName()          what this save says right now
-/**         clearSaveName()         drop the name
-/**  2. NAMES IN THE SAVE/LOAD LIST
-/**     That list is built from save FILE names, and the game's own name for a save
-/**     is "<quest name> - <date>" - identical for both players, because it is only
-/**     the quest and the time. So the label also goes into the file name, written
-/**     by the companion tool (scripts cannot touch files):
-/**         ManualSave_[Rodrigo boss fight]_4711_9f2a11    (tool, "tag" mode)
-/**     and this mod strips everything but the label for the menu row:
-/**         Rodrigo boss fight
-/**     Saves without a [label] show the vanilla name, exactly as before.
+/**  WHAT IT DOES - all of it inside the mod: nothing to run outside the game
 /**
-/**  COMPANION TOOL
-/**  w3save_renamer.py writes the [label] into the file NAME, which is the only
-/**  way a name can show up in the save/load list before that save is loaded: the
-/**  list is built from file names, and scripts have no file access, so no mod can
-/**  rename a save file. Everything after the load is the mod's job.
+/**  1. WHOSE SAVE IS THIS, IN THE SAVE/LOAD LIST
+/**     Two people share one PC and their saves look alike. That list is built from
+/**     save FILE names, which only the game may write, so the mod keeps its own map
+/**     of file -> player and writes the rows itself:
+/**         [Kamil] Bestia z Bialego Sadu - wtorek, 29 wrzesnia 2026 22:51:58
+/**         [?]     ...   <- from before the mod was installed: not claimed yet
+/**     The map fills itself in: a save written while the mod runs is claimed by
+/**     whoever is playing at that moment, and so is the save a player loads. Only
+/**     the saves that were already on disk at install time are left as "?", and one
+/**     command claims those:
+/**         saveNameClaimAll('Kamil')
+/**
+/**  2. WHOSE SAVE IS THIS, INSIDE THE GAME
+/**     The name also goes INTO the save - the game's fact database, the vanilla
+/**     mechanism for script data that belongs to a save - and every time a world is
+/**     loaded the game says "Save: Kamil" on screen. It travels with the file, so it
+/**     survives saving, quitting and loading:
+/**         setSaveName('Kamil')    this save and this player (save to keep it)
+/**         showSaveName()          what this save says right now
+/**         clearSaveName()         drop the name from this save
+/**     Loading a save that carries someone else's name says so and switches the mod
+/**     to that player: the save itself is the authority.
+/**
+/**  3. WHO IS PLAYING
+/**     Normally nothing to type: the mod starts from the game account (GOG / Steam /
+/**     Epic) that the menus show. Two players with two accounts are separated with
+/**     zero setup; on a shared account one setSaveName('Kamil') per session is enough.
+/**
+/**  WHERE THE MAP LIVES (and why the file-name trick is no longer needed)
+/**  In the game's own settings, through the wrapper the options menu uses:
+/**      theGame.GetInGameConfigWrapper().GetVarValue / SetVarValue
+/**      theGame.SaveUserSettings()
+/**  The engine keeps hidden flags there and mods keep their own groups there, so it
+/**  is a supported home for data that must outlive a save without living inside one.
+/**  The details, and what happens if user.settings is ever wiped, are in
+/**  modSaveNamesProfile.ws next to this file.
+/**
+/**  OPTIONAL COMPANION TOOL
+/**  w3save_renamer.py can still put a [label] into a save FILE NAME (and draw the
+/**  save's thumbnail). Nothing in this mod needs it any more: it is there for people
+/**  who want the names to survive with the mod uninstalled.
 /**
 /**  MEASURED ON 5.0 (in-game, modSaveNames_hud(); 14 saves, one renamed by hand)
 /**    file      = "manualsave_53db9_7ea47000_5a6e4ad"   engine names are LOWER CASE
@@ -232,8 +250,17 @@ function ModSaveNames_CustomNameFromFilename(filename : string) : string
 // The one place where the displayed name is decided.
 function ModSaveNames_MakeLabel(save : SSavegameInfo, engineName : string) : string
 {
-	var label : string;
+	var label, owner : string;
 
+	// 1. the mod's own map - the normal case now: "[Kamil] <vanilla name>"
+	owner = ModSaveNames_MapOwner(save.filename);
+
+	if (StrLen(owner) > 0)
+	{
+		return "[" + ModSaveNames_ApplyStyle(owner) + "] " + engineName;
+	}
+
+	// 2. a [label] in the file name (companion tool, older saves)
 	label = ModSaveNames_CustomNameFromFilename(save.filename);
 
 	if (StrLen(label) == 0)
@@ -269,6 +296,9 @@ function IngameMenu_PopulateSaveDataForSlotType(flashStorageUtility : CScriptedF
 	var i				: int;
 
 	theGame.ListSavedGames( saveGames, saveType );
+
+	// the mod: claim what is new, mark what was here before it, remember who plays
+	ModSaveNames_SyncMap(saveGames);
 
 	if (saveType == -1)
 	{
@@ -544,7 +574,7 @@ function OnSpawned(spawnData : SEntitySpawnData)
 {
 	wrappedMethod(spawnData);
 
-	ModSaveNames_AnnounceLabel();
+	ModSaveNames_OnWorldLoaded();
 }
 
 
@@ -556,45 +586,62 @@ function OnSpawned(spawnData : SEntitySpawnData)
 
 exec function setSaveName(name : string)
 {
-	if (thePlayer == null)
+	var file : string;
+
+	if (StrLen(name) == 0)
 	{
 		return;
 	}
 
+	ModSaveNames_SetProfile(name, false);
 	ModSaveNames_StoreLabel(name);
-	thePlayer.DisplayHudMessage("This save is now '" + name + "' - save the game to keep it");
+
+	// claim the save being played, so the list and the HUD never disagree
+	file = ModSaveNames_LoadFile;
+
+	if (StrLen(file) > 0)
+	{
+		ModSaveNames_MapPut(file, name);
+		ModSaveNames_MapFlush();
+	}
+
+	ModSaveNames_Say("'" + name + "' now: this save and this player - save the game to keep it");
 }
 
 exec function showSaveName()
 {
-	var label : string;
+	var label, profile, owner, file : string;
 
-	if (thePlayer == null)
+	label   = ModSaveNames_StoredLabel();
+	profile = ModSaveNames_Profile();
+	file    = ModSaveNames_LoadFile;
+	owner   = "";
+
+	if (StrLen(file) > 0)
 	{
-		return;
+		owner = ModSaveNames_MapOwner(file);
 	}
 
-	label = ModSaveNames_StoredLabel();
+	ModSaveNames_Say("playing as: '" + profile + "' | this save says: '" + label
+		+ "' | list entry: '" + owner + "' | map holds " + IntToString(ModSaveNames_MapSize()) + " save(s)");
 
-	if (StrLen(label) > 0)
-	{
-		thePlayer.DisplayHudMessage("This save: " + label);
-	}
-	else
-	{
-		thePlayer.DisplayHudMessage("This save has no name - use setSaveName('Kamil')");
-	}
+	LogChannel('modSaveNames', ModSaveNames_ConfigSummary());
 }
 
 exec function clearSaveName()
 {
-	if (thePlayer == null)
+	var file : string;
+
+	file = ModSaveNames_LoadFile;
+
+	if (StrLen(file) > 0)
 	{
-		return;
+		ModSaveNames_MapDrop(file);
 	}
 
 	ModSaveNames_StoreLabel("");
-	thePlayer.DisplayHudMessage("Save name cleared");
+
+	ModSaveNames_Say("Name cleared from this save");
 }
 
 
@@ -613,7 +660,7 @@ exec function clearSaveName()
 
 function ModSaveNames_Version() : string
 {
-	return "0.2.0";
+	return "0.3.0";
 }
 
 function ModSaveNames_Clip(text : string, maxLen : int) : string
@@ -656,6 +703,8 @@ exec function modSaveNames_hud()
 
 	GetWitcherPlayer().DisplayHudMessage("modSaveNames " + ModSaveNames_Version() + ": " + IntToString(saveGames.Size()) + " save(s)");
 	GetWitcherPlayer().DisplayHudMessage("this save's label: '" + ModSaveNames_StoredLabel() + "'");
+	GetWitcherPlayer().DisplayHudMessage("playing as: '" + ModSaveNames_Profile() + "'");
+	GetWitcherPlayer().DisplayHudMessage(ModSaveNames_Clip(ModSaveNames_ConfigSummary(), 140));
 
 	LogChannel('modSaveNames', "----- modSaveNames " + ModSaveNames_Version() + " - "
 		+ IntToString(saveGames.Size()) + " save(s) -----");
@@ -677,7 +726,8 @@ exec function modSaveNames_dump()
 
 	theGame.ListSavedGames( saveGames, -1 );
 
-	LogChannel('modSaveNames', "modSaveNames 0.2.0 - " + IntToString(saveGames.Size()) + " save(s) visible");
+	LogChannel('modSaveNames', "modSaveNames " + ModSaveNames_Version() + " - " + IntToString(saveGames.Size()) + " save(s) visible");
+	LogChannel('modSaveNames', ModSaveNames_ConfigSummary());
 
 	for (i = 0; i < saveGames.Size(); i += 1)
 	{
@@ -687,6 +737,7 @@ exec function modSaveNames_dump()
 		LogChannel('modSaveNames', "[" + IntToString(i) + "] slot=" + IntToString(saveGames[i].slotIndex) + " type=" + IntToString(saveGames[i].slotType));
 		LogChannel('modSaveNames', "      file  : " + saveGames[i].filename);
 		LogChannel('modSaveNames', "      engine: " + engineName);
+		LogChannel('modSaveNames', "      owner : '" + ModSaveNames_MapOwner(saveGames[i].filename) + "' (the mod's map)");
 		LogChannel('modSaveNames', "      label : '" + label + "'  -> menu shows: '" + ModSaveNames_MakeLabel(saveGames[i], engineName) + "'");
 	}
 }

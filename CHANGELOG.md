@@ -1,5 +1,34 @@
 # Changelog
 
+## 0.3.0 — everything in the mod (no companion tool, nothing on disk touched)
+
+* **The save/load list is labelled by the mod itself.** Those rows already come from
+  `IngameMenu_PopulateSaveDataForSlotType()`, which the mod owns, so it now writes
+  `[Kamil] Bestia z Bialego Sadu - wtorek, ...` for a save that has never been loaded —
+  the thing the file-name tool used to do, except no save file is renamed.
+* **The map fills itself in.** *save file → player* is kept in the game's own settings
+  (`theGame.GetInGameConfigWrapper()` + `SaveUserSettings()`, the wrapper the options menu
+  uses — the engine keeps its hidden flags there, mods keep their own groups there). A
+  save written while the mod runs is claimed by whoever is playing at that moment, and the
+  save a player loads is claimed the same way. Saves that were already on disk when the
+  mod was installed are marked `[?]` and taken by one command: `saveNameClaimAll('Kamil')`.
+* **Nothing to type in the normal case**: the default player is the game account the menus
+  show (`theGame.GetActiveUserDisplayName()`), so two players with two accounts are
+  separated with zero setup; on a shared account one `setSaveName('Kamil')` per session
+  does it. `setSaveName()` now sets the player *and* the save.
+* **A save that says it belongs to someone else says so**, and the mod switches to that
+  player — the save is the authority.
+* New hooks, both `@wrapMethod` (merge-free): `CR4IngameMenu::LoadSaveRequested` and
+  `CR4Game::OnSaveCompleted`. If the settings file is wiped, the mod falls back to exactly
+  the 0.2 behaviour.
+* `saveNameSettings()` prints where the mod keeps its data; `modSaveNames_hud()`/`_dump()`
+  show the player, the map size and the owner of every save.
+* Tooling: `tools/wscheck.py` now checks every `.ws` file together, and
+  `tools/test-owner-map.py` mirrors the map's string rules in Python — the build refuses
+  to ship if the entry format or the chunk count changed.
+* The renamer and the thumbnail tool stay as an optional extra, for names that must
+  survive with the mod uninstalled.
+
 ## 0.2.1 - the picture tells too (companion tool; the mod itself is unchanged)
 
 * `tools/w3save_renamer.py card` draws a name into a save's **thumbnail** - the picture

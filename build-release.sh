@@ -22,7 +22,12 @@ PY="$(command -v python3 || command -v python)"
 # A shipped script must not reference a function that does not exist: there is no
 # WitcherScript compiler here, and a slipped rename only shows up as a red
 # "Script compilation errors" box in the game.
-"$PY" "$ROOT/tools/wscheck.py" "$ROOT/content/scripts/local/$MOD_NAME.ws"
+"$PY" "$ROOT/tools/wscheck.py" "$ROOT"/content/scripts/local/*.ws
+
+# The save->player map is 8 chunks of "|file=player": the string rules are mirrored
+# in Python, and the chunk count/format are read out of the .ws, so a format change
+# fails here instead of shipping a map that cannot find its own entries.
+"$PY" "$ROOT/tools/test-owner-map.py" "$ROOT/content/scripts/local/$MOD_NAME.ws" "$ROOT/content/scripts/local/modSaveNamesProfile.ws"
 
 # The label format (4 characters per int fact, base 100) is mirrored in Python
 # because WitcherScript cannot run here: a mismatch would silently mangle names.
