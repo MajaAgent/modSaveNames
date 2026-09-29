@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.3.3 — `null` does not exist in WitcherScript (and a name check that would have said so)
+
+* Both files guarded a message with `if (thePlayer == null)`. **`null` is not a
+  WitcherScript literal** — the compiler answers `I dont know any 'null'` — the literal is
+  **`NULL`**, in capitals (the parser's own type table: `Type::Null => "NULL"`). Fixed in
+  both files.
+* The build's name check is new and would have caught it: every word used as a name must
+  be declared in the mod, exist in the game's scripts, or be an engine/loader global
+  (`theGame`, `thePlayer`, `wrapMethod`, `NULL`, …). A word that is none of those is
+  reported, which is exactly the class the compiler answers with `I dont know any 'X'`.
+* `tools/audit-ws.py` also masks source with a character scanner instead of a regex: an
+  apostrophe inside a `"..."` string — legal, and the game itself writes `npc + "'s dust
+  attack"` — made a regex swallow half the file and invent unknown names.
+* New `--builtins <dir>` (or `W3_BUILTINS`) for the engine's builtin declarations shipped
+  with the parser crate. Some enums exist only there (`ESaveGameType`, `SCO_Uploading`,
+  `SCO_Local`), so without it the name check calls them unknown. With corpus + builtins +
+  the real parser, 0.3.3's two files pass all three checks.
+
 ## 0.3.2 — one reserved word, and a real parser in the build
 
 * `ModSaveNames_MapPut()` used a local variable called `entry`; **`entry` is a reserved

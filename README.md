@@ -213,9 +213,13 @@ file-scope `var`, unknown calls), `tools/test-owner-map.py` and
 do not ship:
 
 ```
-W3_CORPUS=/path/to/Witcher3/scripts  ./build-release.sh 0.3.2   # completes the call check
+W3_CORPUS=/path/to/Witcher3/scripts  ./build-release.sh 0.3.3   # completes the name check
 cargo install --git https://github.com/webspam/witcherscript-language witcherscript-check
 ```
+
+`W3_BUILTINS` points at the `builtins/` folder of that parser crate, which declares the
+engine's own enums (`ESaveGameType`, the `SCO_*` save-cloud ones): they exist nowhere in
+the game's scripts, so a name check without them reports them as unknown.
 
 `witcherscript-check` is a third-party WitcherScript parser (MIT, tree-sitter based): it
 is the only thing here that actually parses the language, so with it on `PATH` the build

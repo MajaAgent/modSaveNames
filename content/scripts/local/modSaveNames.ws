@@ -549,7 +549,7 @@ function ModSaveNames_AnnounceLabel()
 {
 	var label : string;
 
-	if (thePlayer == null)
+	if (thePlayer == NULL)
 	{
 		return;
 	}
@@ -659,7 +659,7 @@ exec function clearSaveName()
 
 function ModSaveNames_Version() : string
 {
-	return "0.3.2";
+	return "0.3.3";
 }
 
 function ModSaveNames_Clip(text : string, maxLen : int) : string

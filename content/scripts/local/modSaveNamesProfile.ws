@@ -210,7 +210,7 @@ function ModSaveNames_SetProfile(profile : string, announce : bool)
 // Small wrapper so every message survives a missing player object.
 function ModSaveNames_Say(text : string)
 {
-	if (thePlayer == null)
+	if (thePlayer == NULL)
 	{
 		return;
 	}

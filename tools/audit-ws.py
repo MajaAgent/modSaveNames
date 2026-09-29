@@ -57,30 +57,78 @@ KEYWORDS = {
     "saved", "inline", "abstract", "native", "static", "wrapped", "editoronly",
 }
 
+# Names the engine and the mod loader provide. They are NOT declared in the game's
+# .ws files, so a scan of the corpus cannot find them - and a word that is neither
+# here, nor in the corpus, nor declared in the mod is how `null` (the literal is
+# `NULL`) or a typo gets caught.
+ENGINE_GLOBALS = {
+    "theGame", "thePlayer", "theInput", "theSound", "theCamera", "theUI", "theHud",
+    "theWeather", "theTimer", "theDebug", "theToast", "theSoundSystem", "NULL",
+    "wrapMethod", "wrappedMethod", "replaceMethod", "addMethod", "addField",
+    "removeMethod", "addStat", "addEffect", "addBuff", "addAbility",
+}
+
 # Part of the modding API, not in the game's own scripts.
 MODDING_API = {"wrapMethod", "wrappedMethod", "addStat", "addEffect"}
 
 
 def mask(text: str, keep_strings: bool = False) -> str:
-    """Comments (and optionally literals) blanked out, newlines kept: line numbers
-    stay true, and nothing inside a comment can produce a hit."""
-    def blank(m: re.Match) -> str:
-        return re.sub(r"[^\n]", " ", m.group(0))
+    """Comments (and optionally string literals) blanked out, length and newlines kept.
 
-    out = re.sub(r"/\*.*?\*/", blank, text, flags=re.S)
-    out = re.sub(r"//[^\n]*", blank, out)
-    if not keep_strings:
-        out = re.sub(r"'(\\.|[^'\\])*'", blank, out)
-        out = re.sub(r'"(\\.|[^"\\])*"', blank, out)
-    return out
+    A character scanner, not a regex: an apostrophe inside a "..." string - legal, and
+    the game itself writes them (`npc + "'s dust attack"`) - defeats any pattern that
+    does not track the state, and a mis-masked file reports wrong lines and phantom
+    unknown names.
+    """
+    out: list[str] = []
+    i, n = 0, len(text)
+    state = "code"
+    while i < n:
+        c = text[i]
+        if state == "code":
+            if c == "/" and i + 1 < n and text[i + 1] == "/":
+                out.append("  "); i += 2; state = "line"; continue
+            if c == "/" and i + 1 < n and text[i + 1] == "*":
+                out.append("  "); i += 2; state = "block"; continue
+            if c in "\"'":
+                out.append(c if keep_strings else " ")
+                i += 1
+                state = "dquote" if c == '"' else "squote"
+                continue
+            out.append(c); i += 1; continue
+        if state == "line":
+            out.append("\n" if c == "\n" else " ")
+            if c == "\n":
+                state = "code"
+            i += 1; continue
+        if state == "block":
+            if c == "*" and i + 1 < n and text[i + 1] == "/":
+                out.append("  "); i += 2; state = "code"; continue
+            out.append("\n" if c == "\n" else " "); i += 1; continue
+        if c == "\\" and i + 1 < n:
+            out.append(text[i:i + 2] if keep_strings else "  "); i += 2; continue
+        if (state == "dquote" and c == '"') or (state == "squote" and c == "'"):
+            out.append(c if keep_strings else " "); i += 1; state = "code"; continue
+        out.append(c if keep_strings else ("\n" if c == "\n" else " "))
+        i += 1
+    return "".join(out)
 
 
 def corpus_types(corpus: Path) -> set[str]:
+    """Type names declared by a directory of .ws files: the game's own scripts, or the
+    engine's builtin declarations that ship with the parser crate (some enums, like
+    ESaveGameType, are declared nowhere in the game's scripts but are usable)."""
     names = set()
     for f in corpus.rglob("*.ws"):
-        for m in re.finditer(r"\b(?:class|struct|enum|state)\s+([A-Za-z_]\w*)",
-                             mask(f.read_text(encoding="utf-8", errors="ignore"))):
+        code = mask(f.read_text(encoding="utf-8", errors="ignore"))
+        for m in re.finditer(r"\b(?:class|struct|enum|state)\s+([A-Za-z_]\w*)", code):
             names.add(m.group(1))
+        # enum members: `enum ECloudOp { SCO_Uploading, SCO_Local }`, usually multi-line
+        for m in re.finditer(r"\benum\s+[A-Za-z_]\w*\s*\{(.*?)\}", code, flags=re.S):
+            for part in m.group(1).split(","):
+                nm = part.strip().split("=")[0].strip()
+                if re.fullmatch(r"[A-Za-z_]\w*", nm):
+                    names.add(nm)
     return names
 
 
@@ -119,28 +167,47 @@ def declared_identifiers(code: str) -> list[tuple[int, str, str]]:
 def main() -> int:
     argv = sys.argv[1:]
     corpus = None
-    if "--corpus" in argv:
-        i = argv.index("--corpus")
-        corpus = Path(argv[i + 1])
-        argv = argv[:i] + argv[i + 2:]
+    builtins = None
+    for opt in ("--corpus", "--builtins"):
+        if opt in argv:
+            i = argv.index(opt)
+            value = Path(argv[i + 1])
+            argv = argv[:i] + argv[i + 2:]
+            if opt == "--corpus":
+                corpus = value
+            else:
+                builtins = value
     files = [Path(p) for p in argv]
     if not files:
-        print("usage: audit-ws.py <files...> [--corpus <dir>]")
+        print("usage: audit-ws.py <files...> [--corpus <dir>] [--builtins <dir>]")
         return 2
 
     types = set(BUILTIN_TYPES)
     engine_fns: set[str] = set()
-    if corpus and corpus.is_dir():
-        types |= corpus_types(corpus)
-        engine_fns = corpus_functions(corpus)
-        print(f"corpus: {corpus} ({len(types)} type names, {len(engine_fns)} functions)")
-    else:
-        print("corpus: not given - checking engine type names and structure only")
+    for label, where in (("corpus", corpus), ("builtins", builtins)):
+        if where and where.is_dir():
+            types |= corpus_types(where)
+            engine_fns |= corpus_functions(where)
+            print(f"{label}: {where}")
+        else:
+            print(f"{label}: not given - skipped")
+    if not (corpus or builtins):
+        print("       (engine type names, reserved words and structure are still checked)")
 
     mine: set[str] = set()
     for f in files:
-        mine |= set(re.findall(r"\bfunction\s+([A-Za-z_]\w*)\s*\(",
-                               mask(f.read_text(encoding="utf-8"))))
+        code = mask(f.read_text(encoding="utf-8"))
+        mine |= set(re.findall(r"\bfunction\s+([A-Za-z_]\w*)", code))
+        for m in re.finditer(r"\bvar\s+([^:;\n]+):", code):
+            for part in m.group(1).split(","):
+                nm = part.strip()
+                if re.fullmatch(r"[A-Za-z_]\w*", nm):
+                    mine.add(nm)
+        for m in re.finditer(r"\bfunction\s+[A-Za-z_]\w*\s*\(([^)]*)\)", code):
+            for param in m.group(1).split(","):
+                pm = re.match(r"(?:optional\s+|out\s+|in\s+)?([A-Za-z_]\w*)\s*:", param.strip())
+                if pm:
+                    mine.add(pm.group(1))
 
     problems = 0
     for f in files:
@@ -175,6 +242,29 @@ def main() -> int:
                 problems += 1
             if not unknown:
                 print("   ok  every call resolves to this mod or to the game")
+
+            # every word used as a name must exist: here, in the game, or in the
+            # engine/loader globals. This is the check that catches `null` (the
+            # literal is `NULL`) and any typo the compiler would answer with
+            # "I dont know any '<word>'".
+            engine_syms = engine_fns | types | ENGINE_GLOBALS
+            words = set(re.findall(r"(?<![.\w])([A-Za-z_]\w*)", code))
+            alien = sorted(w for w in words
+                           if w not in mine and w not in engine_syms
+                           and w not in RESERVED and w not in KEYWORDS)
+            for w in alien:
+                print(f"   FAIL '{w}' is declared nowhere in this mod and does not exist "
+                      f"in the game (a typo, or a literal like `null` - use `NULL`)")
+                problems += 1
+            if not alien:
+                print("   ok  every name is either this mod's or the game's")
+
+        # `null` is not a WitcherScript literal: the compiler answers
+        # "I dont know any 'null'". The literal is NULL, in capitals.
+        for i, line in enumerate(code.splitlines(), 1):
+            if re.search(r"(?<![.\w])null(?![.\w])", line):
+                print(f"   FAIL line {i}: `null` does not exist - the literal is `NULL`")
+                problems += 1
 
         plain = mask(raw, keep_strings=True)   # braces live in text too
         for o, c, what in (("{", "}", "braces"), ("(", ")", "parentheses")):

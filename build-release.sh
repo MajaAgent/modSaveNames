@@ -31,8 +31,14 @@ AUDIT_CORPUS=""
 if [ -n "$W3_CORPUS" ] && [ -d "$W3_CORPUS" ]; then
 	AUDIT_CORPUS="--corpus $W3_CORPUS"
 fi
+# The engine's own builtin declarations (the parser crate ships them in builtins/):
+# some enums, ESaveGameType for one, are declared nowhere in the game's scripts.
+AUDIT_BUILTINS=""
+if [ -n "$W3_BUILTINS" ] && [ -d "$W3_BUILTINS" ]; then
+	AUDIT_BUILTINS="--builtins $W3_BUILTINS"
+fi
 # shellcheck disable=SC2086
-"$PY" "$ROOT/tools/audit-ws.py" "$ROOT"/content/scripts/local/*.ws $AUDIT_CORPUS
+"$PY" "$ROOT/tools/audit-ws.py" "$ROOT"/content/scripts/local/*.ws $AUDIT_CORPUS $AUDIT_BUILTINS
 
 # The real parser, when it is around: catches everything a regex cannot (a word that
 # looks like an identifier but is a reserved token, a local `var` declared after an
