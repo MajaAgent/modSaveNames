@@ -56,14 +56,37 @@ Nothing in the mod touches save data; deleting the folder restores vanilla.
    ```
 3. Start the game — the row shows `Rodrigo boss fight`.
 
-After the game overwrites that slot it writes a **new file under a name of its own**,
-so the label is gone; give it again with the same command (`list` shows which saves
-carry no label). Rename modes: `tag` (default — `[label]` in brackets, engine ids
-kept: what the mod reads), `insert`, `keep`, `free`. Options: `--dry-run`,
-`--backup`, `--state`, `--mode`, `--label-template`. The label memory in
-`~/.w3save_renamer/state.json` is keyed on the engine's own name, so `watch` can
-re-apply a label by itself *if* the game ever reuses a name for a slot — treat that
-as a bonus, not a promise.
+After the game overwrites that slot it writes a **new file under a name of its own**
+and deletes the old one, so the label is gone; give it again with the same command
+(`list` shows which saves carry no label). Rename modes: `tag` (default — `[label]` in
+brackets, engine ids kept: what the mod reads), `insert`, `keep`, `free`. Options:
+`--dry-run`, `--backup`, `--state`, `--mode`, `--label-template`. The label memory in
+`~/.w3save_renamer/state.json` is keyed on the engine's own name — and the name the
+game writes contains the save's **time**, so it differs on every save and the memory
+cannot match it; `watch` still reports new saves as they appear, but re-labelling is a
+command, not an automatic.
+
+## Why the mod cannot name the save itself
+
+Checked in the engine's own code and in the full next-gen script source, because it is
+the obvious question:
+
+* the file name is composed in C++ — `String::Printf("%ls_%lx_%lx_%lx", prefix,
+  displayNameIndex, dateRaw, timeRaw)`, so `ManualSave_53db9_7ea47000_5c98d32` is
+  *prefix + the quest name's localization string id + date + time* — and the engine
+  parses that name back to recover the save's type and slot;
+* the menu text is that **localization string** (`GetDisplayName()`), falling back to
+  the raw file name as soon as the name no longer parses — which is exactly what a
+  custom label looks like;
+* `theGame.SaveGame(type, slot)` takes no name, `GetDisplayNameForSavedGame` is
+  `import final`, and the whole save API exposed to scripts (`LoadGameInit`,
+  `ListSavedGames`, `DeleteSavedGame`, `RequestAutoSave`, …) can read, load and delete
+  saves but **never name one**;
+* scripts have no file access, so the mod cannot rename a file after the fact either.
+
+The label therefore has to be written into the file name from outside the game (one
+command), and the only script seam in the naming path — the row in the save list — is
+what this mod takes over. That is the whole architecture.
 
 ## Knobs in the mod (top of `modSaveNames.ws`)
 
