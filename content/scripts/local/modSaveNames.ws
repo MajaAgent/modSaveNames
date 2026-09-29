@@ -117,8 +117,10 @@ function ModSaveNames_MakeLabel(save : SSavegameInfo, engineName : string) : str
 // ------------------------------------------------------------------- hook ----
 
 // Replaces the global function that builds every row of the load/save list.
-// (@replaceMethod with no class = replace a global function.)
-@replaceMethod()
+// @replaceMethod with NO parentheses = replace a global function (REDkit wiki,
+// "WS: Script Compilation Errors overrides"). Writing @replaceMethod() is a
+// syntax error: the parser expects a class name inside the parentheses.
+@replaceMethod
 function IngameMenu_PopulateSaveDataForSlotType(flashStorageUtility : CScriptedFlashValueStorage, saveType:int, parentObject:CScriptedFlashArray, allowEmptySlot:bool) : void
 {
 	var currentData		: CScriptedFlashObject;
@@ -205,7 +207,7 @@ function IngameMenu_PopulateSaveDataForSlotType(flashStorageUtility : CScriptedF
 // Same treatment for the "import save" screen (Witcher 2 imports). It only
 // ever changes names that carry a [label], so it is inert for everything else.
 // Delete this function if the 5.0 build of it differs too much to be worth it.
-@replaceMethod()
+@replaceMethod
 function IngameMenu_PopulateImportSaveData(flashStorageUtility : CScriptedFlashValueStorage, parentObject:CScriptedFlashArray) : void
 {
 	var saveGames		: array< SSavegameInfo >;

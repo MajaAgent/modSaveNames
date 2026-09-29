@@ -73,6 +73,11 @@ Without the mod the row shows the whole file name; with it, only the label.
 
 * **A "Script Compilation Errors" message at startup.** Good news: it prints the
   file and line. Send that text over — it is the only compiler we have.
+* **If the full mod does not compile: use the step-1 file.** Replace
+  `content/scripts/local/modSaveNames.ws` with
+  [`variants/step1-dump-only.ws`](../variants/step1-dump-only.ws) (same file name).
+  It has no override annotation at all — only the console diagnostic — so it cannot
+  fail on the hook, and its output still tells us how the menu name is built.
 * **The console command does not exist.** The script was not loaded: check the
   folder path (`content/scripts/local/`), the `.ws` extension and `mods.settings`.
 * **Nothing changes in the menu, but the console command works.** Then the game
@@ -80,3 +85,17 @@ Without the mod the row shows the whole file name; with it, only the label.
   `modSaveNames_dump()` and we adjust the hook.
 * **Saves still load fine with the mod on** — it only changes what text a row
   displays, never the save data. Removing the mod folder restores vanilla behaviour.
+
+## Annotation gotcha (already handled here)
+
+To replace a **global** function the annotation is written **without parentheses**:
+
+```ws
+@replaceMethod            // correct
+function SomeGlobalFunction() { ... }
+
+@replaceMethod()          // syntax error: unexpected ')', expecting TOKEN_IDENT
+function SomeGlobalFunction() { ... }
+```
+
+`@replaceMethod(ClassName)` is for *methods* and needs the class name inside.

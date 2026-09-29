@@ -56,7 +56,12 @@ function ModSaveNames_AltLabelFor(engineName : string, filename : string) : stri
 }
 
 
-@wrapMethod()
+/*
+ * For a GLOBAL function the REDkit wiki only documents the bare form
+ * (@replaceMethod ...). Bare @wrapMethod is the guess for the same case - if the
+ * compiler rejects it, use the replaceMethod implementation instead.
+ */
+@wrapMethod
 function IngameMenu_PopulateSaveDataForSlotType(flashStorageUtility : CScriptedFlashValueStorage, saveType:int, parentObject:CScriptedFlashArray, allowEmptySlot:bool) : void
 {
 	var row			: CScriptedFlashObject;

@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.1 — first compile error fixed
+
+* **`@replaceMethod()` → `@replaceMethod`.** The empty parentheses are a syntax
+  error for a global function (`unexpected ')', expecting TOKEN_IDENT`); the REDkit
+  wiki documents the bare annotation form. Same fix in the wrap variant
+  (`@wrapMethod`) — for a global function the bare form is the guess, since only
+  `@replaceMethod` is documented for globals.
+* Added [`variants/step1-dump-only.ws`](variants/step1-dump-only.ws): the console
+  diagnostic alone, with no override annotation, for when the hook refuses to
+  compile.
+
 ## 0.1.0 — first public build (not yet compiled on a real install)
 
 * The mod: replaces the global `IngameMenu_PopulateSaveDataForSlotType` (and the W2

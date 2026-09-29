@@ -59,8 +59,9 @@ so labels survive overwrites in every mode.
 
 ```
 content/scripts/local/modSaveNames.ws    the mod
-alternatives/modSaveNames_wrapMethod.ws  wrap-instead-of-replace variant (not shipped in the zip)
-docs/TEST-WITHOUT-REDKIT.md              the 5-minute test
+alternatives/modSaveNames_wrapMethod.ws  wrap-instead-of-replace variant (not shipped)
+variants/step1-dump-only.ws              console diagnostic only, no hook (not shipped)
+docs/TEST-WITHOUT-REDKIT.md              the 5-minute test + the annotation gotcha
 docs/REDKIT-FIRST-STEPS.md               REDkit install, reading the vanilla script, publishing
 tools/w3save_renamer.py                  companion renamer
 tools/test-w3save_renamer.sh             its real test run (synthetic saves, printed transcript)
