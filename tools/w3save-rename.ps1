@@ -58,7 +58,9 @@ if (-not $Label) {
 }
 
 # nazwa musi być poprawna dla Windows i nie może rozbić schematu silnika
-$clean = ($Label -replace '[<>:"/\\|?*]', '-' -replace '\s+', ' ').Trim(' ', '.', '-')
+# znaki zabronione zamieniamy na SPACJĘ (mod skleja powtórzone spacje; myślnik
+# wpisany przez użytkownika zostaje myślnikiem)
+$clean = ($Label -replace '[<>:"/\\|?*]', ' ' -replace '\s+', ' ').Trim(' ', '.', '-')
 if (-not $clean) { Write-Error 'etykieta pusta po oczyszczeniu'; exit 2 }
 if ($clean -ne $Label) { Write-Host "etykieta oczyszczona: '$Label' -> '$clean'" }
 

@@ -95,15 +95,18 @@ LABEL_MARK = re.compile(r"\[([^\]]*)\]")
 # ---------------------------------------------------------------- helpers ----
 
 def sanitize(label: str, max_len: int = MAX_LABEL) -> str:
-    """Make a label safe as a Windows file name (this is where the game lives)."""
+    """Make a label safe as a Windows file name (this is where the game lives).
+
+    Illegal characters become a SPACE, not a dash: the companion mod collapses runs
+    of spaces, and a dash the player typed should stay a dash.
+    """
     out = []
     for ch in label.strip():
         if ch in ILLEGAL or ord(ch) < 32 or ord(ch) == 127:
-            out.append("-")
+            out.append(" ")
         else:
             out.append(ch)
     text = re.sub(r"\s+", " ", "".join(out)).strip(" .")
-    text = re.sub(r"[-_.]{2,}", "-", text).strip(" -._")
     return text[:max_len]
 
 

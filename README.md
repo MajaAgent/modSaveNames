@@ -74,8 +74,8 @@ as a bonus, not a promise.
   `Rodrigo boss fight - Gimme Danger`.
 
 Keep labels to letters, digits, spaces and simple punctuation: the game's font has
-no emoji, and Windows forbids `<>:"/\|?*` (the tools replace those with `-`, which
-the mod renders back as a space).
+no emoji, and Windows forbids `<>:"/\|?*` — both renamers write those as a space and
+the mod collapses the runs, while a dash you typed stays a dash.
 
 ## Build the release archive
 

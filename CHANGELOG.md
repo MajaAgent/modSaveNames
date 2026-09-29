@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.7 — label characters, settled
+
+Characters Windows forbids (`<>:"/\|?*`) are now written into the file name as a
+**space** instead of a dash, and the mod collapses runs of spaces (`ModSaveNames_Tidy`)
+instead of turning every dash into a space. Result: punctuation in a label shows as a
+clean single space (`Bez i agrest: finał` -> `Bez i agrest finał`) and a dash the
+player typed stays a dash. Both renamers follow the same rule.
+
 ## 0.1.6 — labels get their capital letter back
 
 Measured: a file named `KamilTest` is reported by the engine as `kamiltest` — save

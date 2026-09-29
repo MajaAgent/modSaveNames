@@ -1,5 +1,5 @@
 /***********************************************************************/
-/**  modSaveNames 0.1.6
+/**  modSaveNames 0.1.7
 /**  Custom save names for The Witcher 3: Wild Hunt (5.0 / next-gen)
 /**
 /**  WHAT IT DOES
@@ -108,12 +108,26 @@ function ModSaveNames_ExtractLabel(filename : string) : string
 }
 
 
-// Labels live in file names, so characters Windows refuses were written as "-";
-// put the spaces back for the player. Only used for [bracketed] labels - a file
-// the player renamed by hand keeps exactly the characters they typed.
-function ModSaveNames_Prettify(label : string) : string
+// Save labels live inside file names, so the tools replace the characters Windows
+// refuses (<>:"/\|?*) with a SPACE. A label therefore arrives with runs of spaces
+// where that punctuation was; collapse them for the player. Dashes are left alone.
+function ModSaveNames_Tidy(label : string) : string
 {
-	return StrReplaceAll(label, "-", " ");
+	var previous : string;
+	var i : int;
+
+	previous = "";
+
+	for (i = 0; i < 10; i += 1)
+	{
+		if (StrLen(label) != StrLen(previous))
+		{
+			previous = label;
+			label = StrReplaceAll(label, "  ", " ");
+		}
+	}
+
+	return label;
 }
 
 
@@ -194,7 +208,7 @@ function ModSaveNames_CustomNameFromFilename(filename : string) : string
 
 	if (StrLen(label) > 0)
 	{
-		return ModSaveNames_ApplyStyle(ModSaveNames_Prettify(label));
+		return ModSaveNames_ApplyStyle(ModSaveNames_Tidy(label));
 	}
 
 	if (StrLen(filename) > 0 && !ModSaveNames_IsEngineName(filename))
@@ -368,7 +382,7 @@ function IngameMenu_PopulateImportSaveData(flashStorageUtility : CScriptedFlashV
 
 function ModSaveNames_Version() : string
 {
-	return "0.1.6";
+	return "0.1.7";
 }
 
 function ModSaveNames_Clip(text : string, maxLen : int) : string
