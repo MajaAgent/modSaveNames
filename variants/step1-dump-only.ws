@@ -19,6 +19,7 @@
 
 
 
+
 // ------------------------------------------------------------------ knobs ----
 
 // Show the engine's own name after your label, e.g.
@@ -159,7 +160,7 @@ function ModSaveNames_MakeLabel(save : SSavegameInfo, engineName : string) : str
 
 function ModSaveNames_Version() : string
 {
-	return "0.1.4";
+	return "0.1.5";
 }
 
 function ModSaveNames_Clip(text : string, maxLen : int) : string
@@ -178,7 +179,8 @@ function ModSaveNames_Summary(save : SSavegameInfo) : string
 
 	engineName = theGame.GetDisplayNameForSavedGame(save);
 
-	return "slotType=" + IntToString(save.slotType)
+	return "slot=" + IntToString(save.slotIndex)
+		+ " type=" + IntToString(save.slotType)
 		+ " file=" + save.filename
 		+ " | engine='" + engineName + "'"
 		+ " | shows='" + ModSaveNames_MakeLabel(save, engineName) + "'";

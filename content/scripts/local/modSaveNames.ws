@@ -1,5 +1,5 @@
 /***********************************************************************/
-/**  modSaveNames 0.1.4
+/**  modSaveNames 0.1.5
 /**  Custom save names for The Witcher 3: Wild Hunt (5.0 / next-gen)
 /**
 /**  WHAT IT DOES
@@ -325,7 +325,7 @@ function IngameMenu_PopulateImportSaveData(flashStorageUtility : CScriptedFlashV
 
 function ModSaveNames_Version() : string
 {
-	return "0.1.4";
+	return "0.1.5";
 }
 
 function ModSaveNames_Clip(text : string, maxLen : int) : string
@@ -344,7 +344,8 @@ function ModSaveNames_Summary(save : SSavegameInfo) : string
 
 	engineName = theGame.GetDisplayNameForSavedGame(save);
 
-	return "slotType=" + IntToString(save.slotType)
+	return "slot=" + IntToString(save.slotIndex)
+		+ " type=" + IntToString(save.slotType)
 		+ " file=" + save.filename
 		+ " | engine='" + engineName + "'"
 		+ " | shows='" + ModSaveNames_MakeLabel(save, engineName) + "'";

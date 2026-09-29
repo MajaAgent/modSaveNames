@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.5 — the dump reports the save slot
+
+`modSaveNames_hud()` now prints `slot=` (`SSavegameInfo.slotIndex`) next to `type=`.
+The slot number, not the file name, is the only stable key a label memory can key
+on after an overwrite: the engine names every new save file with a fresh id, so a
+mapping keyed on the file name would not survive it.
+
 ## 0.1.4 — case-insensitive: vanilla saves show their quest names again
 
 Regression from 0.1.3, found in the first 14-save dump: the engine reports save
