@@ -7,16 +7,20 @@ scripts. The save list handed to the game UI is a list of files
 ends up showing the save's on-disk name. So renaming the file (or the folder, on
 old-gen saves) renames the save as the game displays it.
 
-The overwrite problem (and the fix)
------------------------------------
-When the game overwrites a save it writes the name *it* generated, so a custom
-name in the file name is lost - the file "reverts" to e.g.
-ManualSave_4711_9f2a11.sav. This tool therefore keeps a small label memory
-(~/.w3save_renamer/state.json, or --state): every (engine name -> label) pair it
-has written out, keyed on the engine's name - the one the game writes back - so
-the mapping survives an overwrite in every rename mode. In `watch` mode, when a
-file whose engine name is remembered appears again, the label is re-applied
-automatically: no prompt, no typing.
+The overwrite problem
+---------------------
+Measured in game on 5.0: overwriting a save slot makes the game write a NEW file
+under a name of its own making (ManualSave_53db9_7ea47000_5c98d32.sav) and delete
+the old one - no orphan files are left behind - and the custom text in the old file
+name is gone. So the reliable path is to give the label again after an overwrite
+(one command), or to run `watch`, which reports the new save as it appears.
+
+This tool also keeps a small label memory (~/.w3save_renamer/state.json, or
+--state): every (engine name -> label) pair it has written out, keyed on the
+engine's own name. That lets `watch` re-apply a label automatically *if* the game
+reuses its name for a slot. Worth trying, but not observed: every save file we have
+seen so far carried a fresh id, so treat the memory as a convenience, not a
+guarantee. `list` shows remembered labels either way.
 
 Save layout (measured on a real 5.0 save)
 -----------------------------------------
@@ -31,11 +35,18 @@ name.
 
 What the menu displays (verified in game on 5.0)
 ------------------------------------------------
-The displayed name is the engine's own derivation from the save (quest-ish); when
-it cannot derive one it falls back to the save's FILE NAME. Renaming
-ManualSave_8559a_7ea47000_515dab8.sav/.json to kamil.sav/kamil.json made the game
-list it as "kamil" - and the engine's own name comes back on the next overwrite
-(hence the label memory above).
+* a save the game named itself shows "<quest name> - <date>", e.g.
+  "Bestia z Białego Sadu - wtorek, 29 września 2026 22:51:58"
+* the engine reports file names in LOWER CASE, and the date it shows is the FILE's
+  timestamp: a byte-identical copy of a save displayed the copy's time
+* ANY rename makes the engine lose that lookup and fall back to the file name:
+  renaming to kamil.sav showed "kamil - <date>", and the tag form
+  ManualSave_[Test-etykiety]_53db9_... showed the whole file name with the date -
+  yet the save kept its type (3 = manual) and its slot, so it still loads and stays
+  in the right tab
+* all three files move together; the game cleans the old ones up on overwrite
+* that raw fallback is ugly, which is what the companion mod modSaveNames is for:
+  it reads the [label] out of the file name and shows only that in the menu row
 
 This tool never edits the inside of a save file. It only renames files/folders
 in the gamesaves directory, after optional backup. Back up anyway.

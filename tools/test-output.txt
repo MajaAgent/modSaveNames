@@ -7,10 +7,10 @@ QuickSave_119500_7ea3e400_3a63a96.png
 QuickSave_119500_7ea3e400_3a63a96.sav
 
 ### 1. list
-3 save(s) in /tmp/w3repotest/gamesaves
-  folder  2026-09-29 19:36  ManualSave-1234
-  file    2026-09-29 19:36  ManualSave_4711_9f2a11.sav  [.json .png .sav]
-  file    2026-09-29 19:36  QuickSave_119500_7ea3e400_3a63a96.sav  [.png .sav]  [no .json metadata]
+3 save(s) in /tmp/w3test/gamesaves
+  folder  2026-09-29 21:23  ManualSave-1234
+  file    2026-09-29 21:23  ManualSave_4711_9f2a11.sav  [.json .png .sav]
+  file    2026-09-29 21:23  QuickSave_119500_7ea3e400_3a63a96.sav  [.png .sav]  [no .json metadata]
 
 ### 2. dry-run rename, label with Windows-illegal chars
 label sanitised: 'Rodrigo: boss fight?' -> 'Rodrigo- boss fight'
@@ -26,10 +26,10 @@ ManualSave_4711_9f2a11.sav  (mode=tag)
   ManualSave_4711_9f2a11.json  ->  ManualSave_[Rodrigo- boss fight]_4711_9f2a11.json
   ManualSave_4711_9f2a11.png  ->  ManualSave_[Rodrigo- boss fight]_4711_9f2a11.png
   ManualSave_4711_9f2a11.sav  ->  ManualSave_[Rodrigo- boss fight]_4711_9f2a11.sav
-label memory: 1 save(s) remembered in /tmp/w3repotest/state.json
-backup in /tmp/w3repotest/gamesaves/_backup
+label memory: 1 save(s) remembered in /tmp/w3test/state.json
+backup in /tmp/w3test/gamesaves/_backup
 done - check the Load game menu (and keep a copy of your saves)
-/tmp/w3repotest/gamesaves:
+/tmp/w3test/gamesaves:
 ManualSave-1234
 ManualSave_[Rodrigo- boss fight]_4711_9f2a11.json
 ManualSave_[Rodrigo- boss fight]_4711_9f2a11.png
@@ -38,7 +38,7 @@ QuickSave_119500_7ea3e400_3a63a96.png
 QuickSave_119500_7ea3e400_3a63a96.sav
 _backup
 
-/tmp/w3repotest/gamesaves/_backup:
+/tmp/w3test/gamesaves/_backup:
 ManualSave_4711_9f2a11.json
 ManualSave_4711_9f2a11.png
 ManualSave_4711_9f2a11.sav
@@ -48,7 +48,7 @@ QuickSave_119500_7ea3e400_3a63a96.sav  (mode=keep)
   ! note: QuickSave_119500_7ea3e400_3a63a96.sav has no .json (metadata)
   QuickSave_119500_7ea3e400_3a63a96.png  ->  QuickSave_Before the Wild Hunt.png
   QuickSave_119500_7ea3e400_3a63a96.sav  ->  QuickSave_Before the Wild Hunt.sav
-label memory: 1 save(s) remembered in /tmp/w3repotest/state.json
+label memory: 1 save(s) remembered in /tmp/w3test/state.json
 done - check the Load game menu (and keep a copy of your saves)
 ManualSave-1234
 ManualSave_[Rodrigo- boss fight]_4711_9f2a11.json
@@ -61,7 +61,7 @@ _backup
 ### 5. old-gen save folder, mode=free
 ManualSave-1234  (mode=free)
   ManualSave-1234  ->  Geralt start
-label memory: 1 save(s) remembered in /tmp/w3repotest/state.json
+label memory: 1 save(s) remembered in /tmp/w3test/state.json
 done - check the Load game menu (and keep a copy of your saves)
 Geralt start
 ManualSave_[Rodrigo- boss fight]_4711_9f2a11.json
@@ -75,27 +75,27 @@ _backup
 label sanitised: 'Rodrigo: boss fight?' -> 'Rodrigo- boss fight'
 ManualSave_4711_9f2a11.sav  (mode=tag)
   ! note: ManualSave_4711_9f2a11.sav has no .json (metadata), .png (thumbnail only - the save still loads without it)
-  ! skipped: refusing to overwrite existing 'ManualSave_[Rodrigo- boss fight]_4711_9f2a11.sav' in /tmp/w3repotest/gamesaves
+  ! skipped: refusing to overwrite existing 'ManualSave_[Rodrigo- boss fight]_4711_9f2a11.sav' in /tmp/w3test/gamesaves
 done - check the Load game menu (and keep a copy of your saves)
 
 ### 7. watch: picks up a save created after it starts
-watching /tmp/w3repotest/gamesaves (interval 0.3s, 4 save(s) already there)
-label memory: 3 entries in /tmp/w3repotest/state.json
+watching /tmp/w3test/gamesaves (interval 0.3s, 4 save(s) already there)
+label memory: 3 entries in /tmp/w3test/state.json
 press Ctrl+C to stop
-[19:36:20] new save: AutoSave_77_abc.sav  (rename with: rename 'AutoSave_77_abc.sav' <label>)  (known labels: Before the Wild Hunt, Geralt start, Rodrigo- boss fight)
+[21:23:15] new save: AutoSave_77_abc.sav  (rename with: rename 'AutoSave_77_abc.sav' <label>)  (known labels: Before the Wild Hunt, Geralt start, Rodrigo- boss fight)
 
 ### 8. watch with an auto-label template
-watching /tmp/w3repotest/gamesaves (interval 0.3s, 5 save(s) already there)
-label memory: 3 entries in /tmp/w3repotest/state.json
+watching /tmp/w3test/gamesaves (interval 0.3s, 5 save(s) already there)
+label memory: 3 entries in /tmp/w3test/state.json
 press Ctrl+C to stop
-[19:36:22] new save CheckPoint_88_def.sav -> Session-2026-09-29-193622
+[21:23:17] new save CheckPoint_88_def.sav -> Session-2026-09-29-212317
   ! note: CheckPoint_88_def.sav has no .json (metadata)
-  CheckPoint_88_def.png  ->  CheckPoint_[Session-2026-09-29-193622]_88_def.png
-  CheckPoint_88_def.sav  ->  CheckPoint_[Session-2026-09-29-193622]_88_def.sav
+  CheckPoint_88_def.png  ->  CheckPoint_[Session-2026-09-29-212317]_88_def.png
+  CheckPoint_88_def.sav  ->  CheckPoint_[Session-2026-09-29-212317]_88_def.sav
 AutoSave_77_abc.png
 AutoSave_77_abc.sav
-CheckPoint_[Session-2026-09-29-193622]_88_def.png
-CheckPoint_[Session-2026-09-29-193622]_88_def.sav
+CheckPoint_[Session-2026-09-29-212317]_88_def.png
+CheckPoint_[Session-2026-09-29-212317]_88_def.sav
 Geralt start
 ManualSave_4711_9f2a11.sav
 ManualSave_[Rodrigo- boss fight]_4711_9f2a11.json
@@ -109,7 +109,7 @@ _backup
 ManualSave_99_c0ffee.sav  (mode=tag)
   ! note: ManualSave_99_c0ffee.sav has no .json (metadata), .png (thumbnail only - the save still loads without it)
   ManualSave_99_c0ffee.sav  ->  ManualSave_[Lonely save]_99_c0ffee.sav
-label memory: 1 save(s) remembered in /tmp/w3repotest/state.json
+label memory: 1 save(s) remembered in /tmp/w3test/state.json
 done - check the Load game menu (and keep a copy of your saves)
 
 ### 10. mode=insert (plain label, no markers)
@@ -117,12 +117,12 @@ ManualSave_55_beef.sav  (mode=insert)
   ! note: ManualSave_55_beef.sav has no .json (metadata)
   ManualSave_55_beef.png  ->  ManualSave_Plain insert_55_beef.png
   ManualSave_55_beef.sav  ->  ManualSave_Plain insert_55_beef.sav
-label memory: 1 save(s) remembered in /tmp/w3repotest/state.json
+label memory: 1 save(s) remembered in /tmp/w3test/state.json
 done - check the Load game menu (and keep a copy of your saves)
 AutoSave_77_abc.png
 AutoSave_77_abc.sav
-CheckPoint_[Session-2026-09-29-193622]_88_def.png
-CheckPoint_[Session-2026-09-29-193622]_88_def.sav
+CheckPoint_[Session-2026-09-29-212317]_88_def.png
+CheckPoint_[Session-2026-09-29-212317]_88_def.sav
 Geralt start
 ManualSave_4711_9f2a11.sav
 ManualSave_Plain insert_55_beef.png
@@ -140,13 +140,13 @@ ManualSave_77_abc.sav  (mode=tag)
   ! note: ManualSave_77_abc.sav has no .json (metadata)
   ManualSave_77_abc.png  ->  ManualSave_[Boss fight]_77_abc.png
   ManualSave_77_abc.sav  ->  ManualSave_[Boss fight]_77_abc.sav
-label memory: 1 save(s) remembered in /tmp/w3repotest/state.json
+label memory: 1 save(s) remembered in /tmp/w3test/state.json
 done - check the Load game menu (and keep a copy of your saves)
 --- memory file ---
 {
   "labels": {
     "CheckPoint_88_def": {
-      "label": "Session-2026-09-29-193622",
+      "label": "Session-2026-09-29-212317",
       "mode": "tag"
     },
     "ManualSave-1234": {
@@ -176,18 +176,18 @@ done - check the Load game menu (and keep a copy of your saves)
   },
   "version": 1
 }--- the game overwrites: it deletes/renames to its own generated name ---
-watching /tmp/w3repotest/gamesaves (interval 0.3s, 8 save(s) already there)
-label memory: 7 entries in /tmp/w3repotest/state.json
+watching /tmp/w3test/gamesaves (interval 0.3s, 8 save(s) already there)
+label memory: 7 entries in /tmp/w3test/state.json
 press Ctrl+C to stop
-[19:36:25] ManualSave_77_abc.sav: known save (engine name) -> re-applying label 'Boss fight' in mode tag - this is what the game does on overwrite
+[21:23:20] ManualSave_77_abc.sav: known save (engine name) -> re-applying label 'Boss fight' in mode tag - this is what the game does on overwrite
   ! note: ManualSave_77_abc.sav has no .json (metadata)
   ManualSave_77_abc.png  ->  ManualSave_[Boss fight]_77_abc.png
   ManualSave_77_abc.sav  ->  ManualSave_[Boss fight]_77_abc.sav
 --- folder after the overwrite ---
 AutoSave_77_abc.png
 AutoSave_77_abc.sav
-CheckPoint_[Session-2026-09-29-193622]_88_def.png
-CheckPoint_[Session-2026-09-29-193622]_88_def.sav
+CheckPoint_[Session-2026-09-29-212317]_88_def.png
+CheckPoint_[Session-2026-09-29-212317]_88_def.sav
 Geralt start
 ManualSave_4711_9f2a11.sav
 ManualSave_Plain insert_55_beef.png
@@ -203,29 +203,29 @@ QuickSave_Before the Wild Hunt.sav
 _backup
 
 ### 12. list, with the label memory in play
-9 save(s) in /tmp/w3repotest/gamesaves
-  file    2026-09-29 19:36  AutoSave_77_abc.sav  [.png .sav]  [no .json metadata]
-  file    2026-09-29 19:36  CheckPoint_[Session-2026-09-29-193622]_88_def.sav  [.png .sav]  [no .json metadata]  (label: Session-2026-09-29-193622)
-  folder  2026-09-29 19:36  Geralt start
-  file    2026-09-29 19:36  ManualSave_4711_9f2a11.sav  [.sav]  [no .json metadata]  (remembered label: Rodrigo- boss fight - run 'watch' to re-apply it after an overwrite)
-  file    2026-09-29 19:36  ManualSave_[Boss fight]_77_abc.sav  [.png .sav]  [no .json metadata]  (label: Boss fight)
-  file    2026-09-29 19:36  ManualSave_[Lonely save]_99_c0ffee.sav  [.sav]  [no .json metadata]  (label: Lonely save)
-  file    2026-09-29 19:36  ManualSave_[Rodrigo- boss fight]_4711_9f2a11.sav  [.json .png .sav]  (label: Rodrigo- boss fight)
-  file    2026-09-29 19:36  ManualSave_Plain insert_55_beef.sav  [.png .sav]  [no .json metadata]
-  file    2026-09-29 19:36  QuickSave_Before the Wild Hunt.sav  [.png .sav]  [no .json metadata]
+9 save(s) in /tmp/w3test/gamesaves
+  file    2026-09-29 21:23  AutoSave_77_abc.sav  [.png .sav]  [no .json metadata]
+  file    2026-09-29 21:23  CheckPoint_[Session-2026-09-29-212317]_88_def.sav  [.png .sav]  [no .json metadata]  (label: Session-2026-09-29-212317)
+  folder  2026-09-29 21:23  Geralt start
+  file    2026-09-29 21:23  ManualSave_4711_9f2a11.sav  [.sav]  [no .json metadata]  (remembered label: Rodrigo- boss fight - run 'watch' to re-apply it after an overwrite)
+  file    2026-09-29 21:23  ManualSave_[Boss fight]_77_abc.sav  [.png .sav]  [no .json metadata]  (label: Boss fight)
+  file    2026-09-29 21:23  ManualSave_[Lonely save]_99_c0ffee.sav  [.sav]  [no .json metadata]  (label: Lonely save)
+  file    2026-09-29 21:23  ManualSave_[Rodrigo- boss fight]_4711_9f2a11.sav  [.json .png .sav]  (label: Rodrigo- boss fight)
+  file    2026-09-29 21:23  ManualSave_Plain insert_55_beef.sav  [.png .sav]  [no .json metadata]
+  file    2026-09-29 21:23  QuickSave_Before the Wild Hunt.sav  [.png .sav]  [no .json metadata]
 
 ### 13. 5.0 save (.sav + .json + .png), mode=keep, and label memory in that mode
 ManualSave_1234_abcd.sav  (mode=keep)
   ManualSave_1234_abcd.json  ->  ManualSave_Kamil IKE run.json
   ManualSave_1234_abcd.png  ->  ManualSave_Kamil IKE run.png
   ManualSave_1234_abcd.sav  ->  ManualSave_Kamil IKE run.sav
-label memory: 1 save(s) remembered in /tmp/w3repotest/state.json
+label memory: 1 save(s) remembered in /tmp/w3test/state.json
 done - check the Load game menu (and keep a copy of your saves)
 --- the game overwrites: its own generated name comes back ---
-watching /tmp/w3repotest/gamesaves (interval 0.3s, 9 save(s) already there)
-label memory: 8 entries in /tmp/w3repotest/state.json
+watching /tmp/w3test/gamesaves (interval 0.3s, 9 save(s) already there)
+label memory: 8 entries in /tmp/w3test/state.json
 press Ctrl+C to stop
-[19:36:27] ManualSave_1234_abcd.sav: known save (engine name) -> re-applying label 'Kamil IKE run' in mode keep - this is what the game does on overwrite
+[21:23:23] ManualSave_1234_abcd.sav: known save (engine name) -> re-applying label 'Kamil IKE run' in mode keep - this is what the game does on overwrite
   ManualSave_1234_abcd.json  ->  ManualSave_Kamil IKE run.json
   ManualSave_1234_abcd.png  ->  ManualSave_Kamil IKE run.png
   ManualSave_1234_abcd.sav  ->  ManualSave_Kamil IKE run.sav
@@ -237,7 +237,7 @@ ManualSave_Kamil IKE run.sav
 {
   "labels": {
     "CheckPoint_88_def": {
-      "label": "Session-2026-09-29-193622",
+      "label": "Session-2026-09-29-212317",
       "mode": "tag"
     },
     "ManualSave-1234": {
