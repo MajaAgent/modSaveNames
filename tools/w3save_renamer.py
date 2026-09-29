@@ -33,6 +33,12 @@ the game looks the thumbnail up by base name (rename it out and the save still
 loads, only the thumbnail is gone), so nothing may be left behind under the old
 name.
 
+The `card` command draws a name into that thumbnail (`<name>.png`): the picture is what
+the load list shows before a save is loaded, and it is the only place a name can appear
+that early - scripts cannot touch files. The engine redraws the picture the next time
+that slot is saved, so run `card` again afterwards (`card --labelled` restamps every
+save that carries a label).
+
 What the menu displays (verified in game on 5.0)
 ------------------------------------------------
 * a save the game named itself shows "<quest name> - <date>", e.g.
@@ -444,6 +450,90 @@ def cmd_watch(args: argparse.Namespace) -> int:
         if args.once:
             return 0
 
+def cmd_card(args: argparse.Namespace) -> int:
+    """Draw a name into a save's thumbnail.
+
+    The thumbnail is an ordinary .png sitting next to the .sav and the engine looks it
+    up by base name, so replacing it changes what the load list shows - and the picture
+    is visible *before* the save is loaded, which is the only place a name can be seen
+    that early: scripts cannot touch files, and the frame itself is captured by the
+    engine (the API scripts get, theGame.RequestScreenshotData() and friends, is
+    import final). The game redraws the picture the next time that slot is saved, so
+    re-run this afterwards (or `card --labelled` after renaming).
+    """
+    try:
+        import card_png
+    except ImportError:  # running from the research repo root: tools/ is one level down
+        sys.path.insert(0, str(Path(__file__).resolve().parent / "tools"))
+        import card_png
+
+    save_dir = Path(args.dir)
+
+    if args.labelled:
+        targets = [(s, label_in_name(s.base)) for s in scan(save_dir)]
+        targets = [(s, label) for s, label in targets if label]
+        if not targets:
+            print("no save carries a [label] yet - run `rename <save> <label>` first")
+            return 1
+    else:
+        if not args.save:
+            print("give a save name, or use --labelled")
+            return 2
+        hits = find_save(save_dir, args.save)
+        if not hits:
+            print(f"no save matches {args.save!r}")
+            return 1
+        if len(hits) > 1 and not args.all:
+            print(f"{len(hits)} saves match {args.save!r}:")
+            for hit in hits:
+                print(f"   {hit.base}")
+            print("narrow it down, or pass --all")
+            return 1
+        chosen = hits if args.all else [hits[0]]
+        targets = [(s, args.text or label_in_name(s.base) or engine_base(s.base)) for s in chosen]
+
+    size: tuple[int, int] | None = None
+    if args.size:
+        try:
+            width, height = (int(v) for v in args.size.lower().replace(" ", "").split("x"))
+        except ValueError:
+            print(f"--size wants WxH, got {args.size!r}")
+            return 2
+        size = (width, height)
+
+    try:
+        fg = card_png.parse_colour(args.fg)
+        bg = card_png.parse_colour(args.bg)
+    except ValueError as exc:
+        print(exc)
+        return 2
+
+    drawn = 0
+    for save, raw_label in targets:
+        if save.is_dir:
+            print(f"{save.base}: old-gen save folder - no separate thumbnail, skipped")
+            continue
+        label = sanitize(raw_label, 24).upper()
+        if not label:
+            print(f"{save.base}: nothing to draw - pass --text")
+            continue
+        png = save.twin
+        own_size = card_png.png_size(png)
+        width, height = size or own_size or card_png.DEFAULT_SIZE
+        if own_size and (width, height) != own_size:
+            print(f"{png.name}: note - the game's own thumbnail is {own_size[0]}x{own_size[1]}")
+        if args.dry_run:
+            print(f"would draw {width}x{height} {label!r} into {png.name}")
+            continue
+        if args.keep and png.exists() and not png.with_name(png.name + ".orig").exists():
+            png.with_name(png.name + ".orig").write_bytes(png.read_bytes())
+        png.write_bytes(card_png.render(width, height, label, args.sub, fg, bg))
+        drawn += 1
+        print(f"{png.name}: {width}x{height} card {label!r}, {png.stat().st_size} B")
+    if not args.dry_run:
+        print(f"{drawn} thumbnail(s) drawn - the load list shows them immediately")
+    return 0
+
 
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description="Custom names for The Witcher 3 saves (renames gamesaves files).")
@@ -468,6 +558,21 @@ def main(argv: list[str] | None = None) -> int:
     w.add_argument("--label-template", help="auto-label new saves, e.g. 'Session-{date}-{time}'")
     w.add_argument("--mode", choices=("tag", "insert", "keep", "free"), default="tag")
 
+    c = sub.add_parser("card", help="draw a save's thumbnail: whose save is it, at a glance")
+    c.add_argument("save", nargs="?", help="save name (omit with --labelled)")
+    c.add_argument("--text", help="text to draw (default: the save's [label], else its own name)")
+    c.add_argument("--labelled", action="store_true", help="every save carrying a [label] gets its own")
+    c.add_argument("--all", action="store_true", help="draw for every match, not just one")
+    c.add_argument("--size", help="WxH (default: the size of the thumbnail being replaced)")
+    c.add_argument("--sub", help="a smaller line under the big text")
+    c.add_argument("--fg", default="#f5f5f5", help="text colour")
+    c.add_argument("--bg", default="#101418", help="background colour")
+    c.add_argument("--keep", action="store_true", help="keep the replaced picture as <name>.png.orig")
+    # default=SUPPRESS so the global value survives when the flag is given before
+    # the command instead (both orders work)
+    c.add_argument("--dry-run", action="store_true", default=argparse.SUPPRESS,
+                   help="show what would be drawn, write nothing")
+
     args = p.parse_args(argv)
     if not args.dir:
         found = default_save_dir()
@@ -483,7 +588,7 @@ def main(argv: list[str] | None = None) -> int:
         args.state = default_state_path()
     else:
         args.state = Path(args.state)
-    return {"list": cmd_list, "rename": cmd_rename, "watch": cmd_watch}[args.cmd](args)
+    return {"list": cmd_list, "rename": cmd_rename, "watch": cmd_watch, "card": cmd_card}[args.cmd](args)
 
 
 if __name__ == "__main__":

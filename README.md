@@ -98,6 +98,27 @@ game writes contains the save's **time**, so it differs on every save and the me
 cannot match it; `watch` still reports new saves as they appear, but re-labelling is a
 command, not an automatic.
 
+### Putting the name on the picture
+
+The thumbnail beside a save is an ordinary `.png` next to the `.sav` (the engine finds
+it by base name and scales whatever is there), and that picture is visible in the load
+list **before** the save is loaded. The mod cannot touch it - the frame is captured by
+the engine, and everything scripts get (`theGame.RequestScreenshotData()` and friends)
+is `import final` - but the renamer can:
+
+```
+python3 tools/w3save_renamer.py card --labelled                      # every labelled save gets its name drawn in
+python3 tools/w3save_renamer.py card ManualSave_[KAMIL]_8559a_7ea47000_515dab8 --text "KAMIL" --sub "brat: BARTEK"
+```
+
+* the card keeps the size of the picture it replaces (so the list looks unchanged);
+  `--size WxH` overrides it, `--dry-run` shows what would happen, `--keep` stashes the
+  replaced picture as `<name>.png.orig`;
+* drawing needs no image library at all: `tools/card_png.py` writes a plain PNG and
+  carries a 5x7 bitmap font, so a bare Python is enough;
+* **the game redraws that picture the next time the slot is saved**, so run `card`
+  again afterwards - the same dance as with the file name.
+
 ## Why the mod cannot name the save itself
 
 Checked in the engine's own code and in the full next-gen script source, because it is
@@ -150,6 +171,8 @@ tools/w3save_renamer.py                  companion renamer (Python)
 tools/w3save-rename.ps1                  companion renamer (PowerShell, no dependencies)
 tools/test-w3save_renamer.sh             its real test run (synthetic saves, printed transcript)
 tools/wscheck.py                         static check (undefined calls, braces) run by the build
+tools/card_png.py                        PNG writer + 5x7 bitmap font for thumbnails (no dependencies)
+tools/test-w3save-card.sh                its test run (right file, right size, --dry-run writes nothing)
 build-release.sh                         release zip
 ```
 

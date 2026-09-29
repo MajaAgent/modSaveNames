@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.2.1 - the picture tells too (companion tool; the mod itself is unchanged)
+
+* `tools/w3save_renamer.py card` draws a name into a save's **thumbnail** - the picture
+  the load list shows *before* a save is loaded, which is the only place a name can
+  appear that early. `card --labelled` restamps every save that already carries a
+  `[label]` with that label; `--text`, `--sub`, `--size`, `--fg`, `--bg`, `--dry-run`
+  and `--keep` round it out.
+* `tools/card_png.py` - a dependency-free PNG writer plus a 5x7 bitmap font, so the tool
+  still runs on a bare Python. Checked by `tools/test-w3save-card.sh` (right file, right
+  size, `--dry-run` writes nothing).
+* Why the mod cannot do this itself: the frame is captured by the engine, and the API
+  scripts get (`theGame.RequestScreenshotData()`, `IsScreenshotDataReady()`,
+  `FreeScreenshotData()`, all `import final`) only reads it. The `.png` beside the save
+  is the one part of that picture that is just a file.
+
 ## 0.2.0 — whose save is it
 
 * **A name stored inside the save.** `setSaveName('X')` writes it into the save you are
